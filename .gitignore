@@ -1,6 +1,7 @@
 #can have local git ignore where all keys can be ignored
 # Virtual env
 venv
+.idea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
