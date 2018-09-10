@@ -4,6 +4,7 @@ venv
 .idea
 
 src/authentication.py
+src/.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
