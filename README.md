@@ -1,2 +1,2 @@
-# twitter_juul
-Scraping twitter data for juul
+# twitter_data_juul
+Scrapingthe twitter dataset juul
