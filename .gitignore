@@ -2,6 +2,7 @@
 # Virtual env
 venv
 .idea
+src/authentication.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
