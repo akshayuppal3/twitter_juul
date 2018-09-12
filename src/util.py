@@ -4,6 +4,10 @@
 ####################
 from time import sleep
 import tweepy
+import os
+
+logdir =  os.path.abspath("../output/twintData/")
+format = "%(asctime)-15s      %(message)s"
 
 def output_to_csv(df,filename):
     df.to_csv(path_or_buf=filename)
@@ -15,4 +19,4 @@ def limit_handler(cursor):
             yield cursor.next()
         except tweepy.RateLimitError:
             print("sleeping -rate limit exceeded")
-            sleep(15*60)
+            sleep(15)
