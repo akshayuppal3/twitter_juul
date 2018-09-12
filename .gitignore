@@ -5,6 +5,7 @@ venv
 
 src/authentication.py
 src/.gitignore
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

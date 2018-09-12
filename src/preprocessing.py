@@ -25,7 +25,7 @@ class Preprocess:
         author = OAuthHandler(consumer_key, consumer_secret)
         author.set_access_token(access_token, access_secret)
         #change to accomodate rate limit errors
-        api = tweepy.API(author)
+        api = tweepy.API(author,wait_on_rate_limit=True,wait_on_rate_limit_notify=True)
         return(api)
 
     #@TODO check if more fields required or not
@@ -70,16 +70,16 @@ class Preprocess:
         df = pd.DataFrame([])
         #     df.astype('object')       # as some data contains list
         try:
-            for tweet in util.limit_handler(tweepy.Cursor(self.api.search, q=(queryParams), since_id=inceptionDate, lang=lang).items(5)):  # (lang=en) : lang restriction
+            for tweet in util.limit_handler(tweepy.Cursor(self.api.search, q=(queryParams), since_id=inceptionDate, lang=lang).items()):  # (lang=en) : lang restriction
                 friendList = [friend for friend in
-                              util.limit_handler(tweepy.Cursor(self.api.friends_ids, id=tweet.user.id).items(5))]  # items value set only for test
+                              util.limit_handler(tweepy.Cursor(self.api.friends_ids, id=tweet.user.id).items())]  # items value set only for test
                 data = self.getTweetObject(tweet, friendList=friendList)
-                df = df.append(data, ignore_index=True, sort=False)
+                df = df.append(data, ignore_index=True)
                 for userID in friendList:
                     user = self.api.get_user(userID)
                     userData = self.getTweetObject(tweet, friendList=friendList, user=user)
                     if user.id not in df.userID:  # prevent duplication in data
-                        df = df.append(userData, ignore_index=True, sort=False)
+                        df = df.append(userData, ignore_index=True)
             return df
         except tweepy.TweepError as e:
             print(e.api_code)
@@ -87,9 +87,10 @@ class Preprocess:
 
     def searchTweets(self):
         df = self.getTwitterData(hashtags, inceptionDate, lang)
-        df = df.set_index('userID')  #Changing index for mongoDb
-        os.chdir('../output')
-        util.output_to_csv(df,filename='juulDataset.csv')
+        if (df):
+            df = df.set_index('userID')  #Changing index for mongoDb
+            os.chdir('../output')
+            util.output_to_csv(df,filename='juulDataset.csv')
 
 
 if(__name__ == '__main__'):
