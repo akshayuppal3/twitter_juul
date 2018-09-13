@@ -5,7 +5,9 @@ venv
 
 src/authentication.py
 src/.gitignore
-output/
+output/previousTest
+output/newData
+output/testTwintData
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

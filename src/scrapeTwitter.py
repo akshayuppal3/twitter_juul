@@ -14,10 +14,10 @@ handler = RotatingFileHandler(util.logdir + "/twintScrapingLogs.log", maxBytes=1
 logger.addHandler(handler)
 
 class ScrapeTwitter:
-
     def __init__(self):
         self.outputPath = os.path.abspath("../output/twintData/")
-        self.limit = 1
+        self.userLimit = 1
+        self.followingLimit = 1
 
     def getTweetData(self):
         param = self.twintParam(op="Search")
@@ -54,7 +54,7 @@ class ScrapeTwitter:
             twint.run.Following(param)
             if (os.path.exists(param.Output)):
                 dfFoll = pd.read_csv(param.Output)
-                dfFoll.assign(Parent=param.Username)
+                dfFoll.assign(Parent=param.Username)     #@TODO add the parent field to the table
                 dfFoll.append(dfFoll, ignore_index=True)
         if (not dfFoll.empty):
             self.toCSV(dfFoll, "/juulFollowingTwint.csv")
@@ -71,12 +71,13 @@ class ScrapeTwitter:
     def twintParam(self, op="Search"):
         config = twint.Config()
         config.Store_csv = True
-        # config.limit = self.limit
         if (op == "Search"):
             config.Since = inceptionDate
             config.Store_csv = True
+            config.limit = self.userLimit
         elif (op =="Following"):
             config.User_full = True
+            config.limit = self.followingLimit
         return (config)
 
     def execData(self, config, op="Search"):
