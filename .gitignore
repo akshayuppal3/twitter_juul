@@ -3,6 +3,7 @@
 venv
 .idea
 
+src/.gitignore
 src/authentication.py
 src/.gitignore
 output/previousTest
