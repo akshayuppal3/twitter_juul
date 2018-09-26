@@ -1,3 +1,7 @@
+#########################
+###Alternative way to   #
+# scrape data using    ##
+# Twint moduel##########
 import twint
 import pandas as pd
 import os

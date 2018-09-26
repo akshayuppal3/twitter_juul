@@ -3,12 +3,17 @@
 venv
 .idea
 
+
+summary_of_papers
+weekly_reports
 src/.gitignore
 src/authentication.py
 src/.gitignore
+output/*.csv
 output/previousTest
 output/newData
 output/testTwintData
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
