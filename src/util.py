@@ -6,7 +6,7 @@ from time import sleep
 import tweepy
 import os
 
-logdir =  os.path.abspath("../output/twintData/")
+logdir =  os.path.abspath("../output/hexagon/")
 format = "%(asctime)-15s      %(message)s"
 
 def output_to_csv(df,filename):
