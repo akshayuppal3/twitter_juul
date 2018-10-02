@@ -9,6 +9,7 @@ weekly_reports
 src/.gitignore
 src/authentication.py
 src/.gitignore
+src/CrimsonPosts.py
 output/*.csv
 output/previousTest
 output/newData

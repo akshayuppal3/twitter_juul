@@ -1,3 +1,7 @@
+#########################
+###Twitter API to get   #
+# all the data from   ##
+# Tweepy  #########
 import pandas as pd
 import os
 import tweepy
@@ -31,22 +35,31 @@ class Preprocess:
     #@TODO check if more fields required or not
     # @params passing tweet, friendlist and userinfo(in case of following)
     # returns data frame of tweet and user info
-    def getTweetObject(self, tweetObj, friendList, user=None):
-        if user == None:
+    def getTweetObject(self, tweetObj, friendList=False, user=None):
+        if friendList is True:    #in case we dont have friend list
+            friendList = [self.api.friends_ids(tweetObj.user.id)]
+        else:
+            friendList = "None"
+        if user is None:
             data = pd.DataFrame(
                 {
                     'tweetId': tweetObj.id_str,
                     'userID': tweetObj.user.id,
+                    'tweetText': tweetObj.text,
                     'parentID': 'None',
                     'favourites_count': tweetObj.user.favourites_count,
+                    'userLocation': tweetObj.user.location,
                     'userName': tweetObj.user.name,
                     'userDescription': tweetObj.user.description,
                     'userCreatedAt': tweetObj.user.created_at,
                     'imageurl': tweetObj.user.profile_image_url,
                     'userFollowersCount': tweetObj.user.followers_count,
                     'friendsCount': tweetObj.user.friends_count,
-                    'friendList': [friendList]
-                })
+                    'friendList': friendList,
+                    'retweetCount': tweetObj.retweet_count,
+                    'retweeted': tweetObj.retweeted,
+                    'lang': tweetObj.lang,
+                }, index=[0])
         else:
             data = pd.DataFrame(
                 {
@@ -73,11 +86,11 @@ class Preprocess:
             for tweet in util.limit_handler(tweepy.Cursor(self.api.search, q=(queryParams), since_id=inceptionDate, lang=lang).items()):  # (lang=en) : lang restriction
                 friendList = [friend for friend in
                               util.limit_handler(tweepy.Cursor(self.api.friends_ids, id=tweet.user.id).items())]  # items value set only for test
-                data = self.getTweetObject(tweet, friendList=friendList)
+                data = self.getTweetObject(tweet, friendList=False)
                 df = df.append(data, ignore_index=True)
                 for userID in friendList:
-                    user = self.api.get_user(userID)
-                    userData = self.getTweetObject(tweet, friendList=friendList, user=user)
+                    user = self.api.get_user(userID)      # @TODO should be reaplced for statuses lookup(100: batch)
+                    userData = self.getTweetObject(tweet, friendList=False, user=user)
                     if user.id not in df.userID:  # prevent duplication in data
                         df = df.append(userData, ignore_index=True)
             return df
