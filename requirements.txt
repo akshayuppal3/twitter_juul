@@ -2,3 +2,4 @@ twint
 pandas
 numpy
 tweepy
+requests
