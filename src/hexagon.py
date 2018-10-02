@@ -19,7 +19,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import tweepy
 
-startDate = '2018-09-30'
+startDate = '2017-07-01'
 endDate = '2018-10-01'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
