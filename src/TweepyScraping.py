@@ -8,6 +8,7 @@ import tweepy
 from tweepy import OAuthHandler
 from authentication import Authenticate
 import util
+import numpy as np
 
 #constant
 hashtags = '#juulvapor OR #juulnation OR #doit4juul OR #juul'
@@ -32,17 +33,21 @@ class Preprocess:
         api = tweepy.API(author,wait_on_rate_limit=True,wait_on_rate_limit_notify=True)
         return(api)
 
-    #@TODO check if more fields required or not
-    # @params passing tweet, friendlist and userinfo(in case of following)
+    # @TODO chnage for following
+    # @params passing tweet, friendOpt and userinfo(in case of following)
     # returns data frame of tweet and user info
-    def getTweetObject(self, tweetObj, friendList=False, user=None):
-        if friendList is True:    #in case we dont have friend list
+    def getTweetObject(self, tweetObj, friendOpt=False, user=None):
+        if friendOpt is True:    #in case we dont have friend list
             friendList = [self.api.friends_ids(tweetObj.user.id)]
         else:
             friendList = "None"
         if user is None:
-            data = pd.DataFrame(
-                {
+            if len(tweetObj.entities['hashtags']) != 0:
+                hashtags = np.array([j['text'] for j in tweetObj.entities['hashtags']])
+            else:
+                hashtags = "None"
+            data = pd.DataFrame.from_records(
+                [{
                     'tweetId': tweetObj.id_str,
                     'userID': tweetObj.user.id,
                     'tweetText': tweetObj.text,
@@ -56,13 +61,14 @@ class Preprocess:
                     'userFollowersCount': tweetObj.user.followers_count,
                     'friendsCount': tweetObj.user.friends_count,
                     'friendList': friendList,
+                    'hashtags' : hashtags,
                     'retweetCount': tweetObj.retweet_count,
                     'retweeted': tweetObj.retweeted,
                     'lang': tweetObj.lang,
-                }, index=[0])
+                }])
         else:
-            data = pd.DataFrame(
-                {
+            data = pd.DataFrame.from_records(
+                [{
                     'tweetId': "None",
                     'userID': user.id,
                     'parentID': tweetObj.user.id,
@@ -74,7 +80,7 @@ class Preprocess:
                     'userFollowersCount': user.followers_count,
                     'friendsCount': user.friends_count,
                     'friendList': "None"
-                }, index=[0])
+                }], index=[0])
         return data
 
     # function to get twitter and user info and return df
@@ -86,11 +92,11 @@ class Preprocess:
             for tweet in util.limit_handler(tweepy.Cursor(self.api.search, q=(queryParams), since_id=inceptionDate, lang=lang).items()):  # (lang=en) : lang restriction
                 friendList = [friend for friend in
                               util.limit_handler(tweepy.Cursor(self.api.friends_ids, id=tweet.user.id).items())]  # items value set only for test
-                data = self.getTweetObject(tweet, friendList=False)
+                data = self.getTweetObject(tweet, friendOpt=False)
                 df = df.append(data, ignore_index=True)
                 for userID in friendList:
                     user = self.api.get_user(userID)      # @TODO should be reaplced for statuses lookup(100: batch)
-                    userData = self.getTweetObject(tweet, friendList=False, user=user)
+                    userData = self.getTweetObject(tweet, friendOpt=False, user=user)
                     if user.id not in df.userID:  # prevent duplication in data
                         df = df.append(userData, ignore_index=True)
             return df

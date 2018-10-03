@@ -16,24 +16,23 @@ import os
 import math
 import argparse
 import logging
-from logging.handlers import RotatingFileHandler
 import tweepy
 
-startDate = '2017-07-01'
-endDate = '2018-10-01'
+startDate = '2017-10-01'
+endDate = '2018-10-02'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
 logger = logging.getLogger("logger")
-# handler = RotatingFileHandler(util.logdir + "/hexagonScrapingLogs.log", maxBytes=10000000, backupCount=10)
-# logger.addHandler(handler)
+authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
+baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
 class Hexagon:
 	def __init__(self):
-		self.authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
+		self.authenticateURL = authenticateURL
 		self.authToken = self.getAuthToken()
 		self.dates = self.getDates()
-		self.baseUrl = "https://api.crimsonhexagon.com/api/monitor"
+		self.baseUrl = baseUrl
 		self.url = self.getURL()
 		self.hexagonData = self.getData()
 
@@ -92,6 +91,7 @@ class Hexagon:
 		)
 		return data
 
+	# get the hexagon data
 	# @TODO check if no of posts < 10000
 	def getData(self):
 		logging.info('[INFO] extraction of Hexagon data started')
@@ -104,33 +104,33 @@ class Hexagon:
 		logging.info('[INFO] all data extracted from hexagon')
 		return df
 
-	def getTwitterData(self, df, friends = False):
+	def getBatchTwitter(self,tweetIDs,friendOpt = False):
+		data = pd.DataFrame([])
+		ob = Preprocess()
+		api = ob.api
+		try:
+			user = api.statuses_lookup(tweetIDs)
+			for idx, statusObj in enumerate(user):
+				userData = ob.getTweetObject(tweetObj=statusObj, friendOpt=friendOpt)
+				data = data.append(userData, ignore_index=True)
+			return data
+		except tweepy.TweepError as e:
+			logging.info("[Error] " + e.reason)
+
+	def getTwitterData(self, df, friendOpt = False):
 		if 'tweetID' in df:
 			logging.info('[INFO] extraction started for twitter data')
 			data = pd.DataFrame([])
-			ob = Preprocess()
-			api = ob.api
 			if (len(df) > 100):  # to limit the size for api to 100
 				batchSize = int(math.ceil(len(df) / 100))
 				for i in range(batchSize):
 					logging.info("[INFO] batch %d started for Twitter data", i )
 					dfBat = df[(100 * i):(100 * (i + 1))]
-					try:
-						user = api.statuses_lookup(dfBat.tweetID.tolist())
-						for idx, statusObj in enumerate(user):
-							userData = ob.getTweetObject(tweetObj=statusObj, friendList=friends)
-							data = data.append(userData, ignore_index=True)
-					except tweepy.TweepError as e:
-						logging.info("[Error] " + e.reason )
+					temp = self.getBatchTwitter(dfBat.tweetID.tolist(),friendOpt = friendOpt)
+					data = data.append(temp)
 			else:
-				try:
-					user = api.statuses_lookup(df.tweetID.tolist())
-					logging.info("[INFO] single batch  started for Twitter Data")
-					for idx,statusObj in enumerate(user):
-						userData = ob.getTweetObject(tweetObj=statusObj, friendList=friends)
-						data = data.append(userData, ignore_index=True)
-				except tweepy.TweepError as e:
-					logging.info("[Error] " + e.reason)
+				logging.info("[INFO] single batch started for Twitter data")
+				data = self.getBatchTwitter(df.tweetID.tolist(),friendOpt=friendOpt)
 			return data
 
 	def output(self, df, filename):
@@ -139,18 +139,19 @@ class Hexagon:
 		logging.info("[INFO] CSV file created")
 
 def main():
-	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
-	parser.add_argument('-f', '--friendList', help='If friend list is required or not', required=True)
-	args = vars(parser.parse_args())
-	logging.info("[INFO] new extraction process started")
+	# parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
+	# parser.add_argument('-f', '--friendOption', help='If friend list is required or not', required=True)
+	# args = vars(parser.parse_args())
 	ob = Hexagon()
 	df = ob.hexagonData
-	if (args['friendList'] == True):
-		option = True
-	else:
-		option = False
-	df2 = ob.getTwitterData(df,friends=option)
-	ob.output(df2, 'hexagonData2.csv')
+	# if (args['friendOption'] == True):
+	# 	option = True
+	# else:
+	# 	option = False
+	option = False
+	logging.info("[INFO] new extraction process started with " + ("With Friend option" if option == True else "Without friend option"))
+	df2 = ob.getTwitterData(df,friendOpt=option)
+	ob.output(df2, 'hexagonDatatest.csv')
 	logging.info("[INFO] job completed succesfully")
 
 if (__name__ == '__main__'):
