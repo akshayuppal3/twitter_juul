@@ -19,8 +19,8 @@ import logging
 import tweepy
 import datetime
 
-startDate = '2017-12-01'
-endDate = '2018-12-30'
+startDate = '2018-10-01'
+endDate = '2018-10-03'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
@@ -176,7 +176,8 @@ class Hexagon:
 
 def main():
 	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
-	parser.add_argument('-f', '--friendOption', help='If friend list is required or not', required=True)
+	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', required=True)
+	parser.add_argument('-f', '--filename', help = 'specify the name of teh file to be stored', default="hexagonDataset.csv")
 	args = vars(parser.parse_args())
 	ob = Hexagon()
 	df = ob.hexagonData
@@ -184,9 +185,10 @@ def main():
 		option = True
 	else:
 		option = False
+	filename = args['filename']
 	logging.info("[INFO] new extraction process started with " + ("With Friend option" if option == True else "Without friend option"))
 	df2 = ob.getTwitterData(df,friendOpt=option)
-	ob.output(df2, 'hexagonDatatest.csv')
+	ob.output(df2, filename)
 	logging.info("[INFO] job completed succesfully")
 
 if (__name__ == '__main__'):

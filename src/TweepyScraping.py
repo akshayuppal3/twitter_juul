@@ -50,7 +50,7 @@ class Preprocess:
                 [{
                     'tweetId': tweetObj.id_str,
                     'userID': tweetObj.user.id,
-                    'tweetText': tweetObj.text,
+                    'tweetText': tweetObj.text.replace("\n"," "),
                     'parentID': 'None',
                     'favourites_count': tweetObj.user.favourites_count,
                     'userLocation': tweetObj.user.location,
