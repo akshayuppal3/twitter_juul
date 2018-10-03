@@ -6,7 +6,7 @@
 # @Author : Akshay
 
 from authentication import Authenticate
-from preprocessing import Preprocess
+from TweepyScraping import Preprocess
 import requests
 import urllib.request
 import json
@@ -139,16 +139,15 @@ class Hexagon:
 		logging.info("[INFO] CSV file created")
 
 def main():
-	# parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
-	# parser.add_argument('-f', '--friendOption', help='If friend list is required or not', required=True)
-	# args = vars(parser.parse_args())
+	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
+	parser.add_argument('-f', '--friendOption', help='If friend list is required or not', required=True)
+	args = vars(parser.parse_args())
 	ob = Hexagon()
 	df = ob.hexagonData
-	# if (args['friendOption'] == True):
-	# 	option = True
-	# else:
-	# 	option = False
-	option = False
+	if (args['friendOption'] == True):
+		option = True
+	else:
+		option = False
 	logging.info("[INFO] new extraction process started with " + ("With Friend option" if option == True else "Without friend option"))
 	df2 = ob.getTwitterData(df,friendOpt=option)
 	ob.output(df2, 'hexagonDatatest.csv')
