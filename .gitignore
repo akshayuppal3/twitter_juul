@@ -10,10 +10,7 @@ src/.gitignore
 src/authentication.py
 src/.gitignore
 src/CrimsonPosts.py
-output/*.csv
-output/previousTest
-output/newData
-output/testTwintData
+output/*
 
 
 # Byte-compiled / optimized / DLL files

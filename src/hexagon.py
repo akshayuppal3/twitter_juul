@@ -17,13 +17,14 @@ import math
 import argparse
 import logging
 import tweepy
+import datetime
 
-startDate = '2017-10-01'
-endDate = '2018-10-02'
+startDate = '2017-12-01'
+endDate = '2018-12-30'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
-logger = logging.getLogger("logger")
+# logger = logging.getLogger("logger")
 authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
 baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
@@ -31,10 +32,8 @@ class Hexagon:
 	def __init__(self):
 		self.authenticateURL = authenticateURL
 		self.authToken = self.getAuthToken()
-		self.dates = self.getDates()
 		self.baseUrl = baseUrl
-		self.url = self.getURL()
-		self.hexagonData = self.getData()
+		self.hexagonData = self.getData(startDate,endDate)
 
 	def getAuthToken(self):
 		ob = Authenticate()
@@ -55,27 +54,46 @@ class Hexagon:
 		except requests.ConnectionError as e:
 			print(e)
 
-	def getDates(self):
-		dates = "&start=" + startDate + "&end=" + endDate  # Combines start and end date into format needed for API call
+	# @paramms startD,endD : type <string>
+	def getDates(self,startD,endD):
+		dates = "&start=" + startD + "&end=" + endD  # Combines start and end date into format needed for API call
 		return dates
+
+	# @returns start_dates and end_Dates in str format
+	def getDateRange(self,begin,end):
+		dt_start = datetime.datetime.strptime(begin,util.dateFormat)
+		dt_end =  datetime.datetime.strptime(end,util.dateFormat)
+		one_day = datetime.timedelta(1)
+		start_dates = [dt_start.strftime(util.dateFormat)]
+		end_dates = []
+		today = dt_start
+		while today < dt_end:
+			tomorrow = today + one_day
+			if (tomorrow.month != today.month):
+				start_dates.append(tomorrow.strftime(util.dateFormat))
+				end_dates.append(today.strftime(util.dateFormat))
+			today = tomorrow
+
+		end_dates.append(dt_end.strftime(util.dateFormat))
+		return (start_dates,end_dates)
 
 	def getEndPoint(self, endpoint):
 		return '{}/{}?'.format(self.baseUrl, endpoint)
 
-	def getURL(self):
-		endpoint = self.getEndPoint('posts')
-		extendLimit = "&extendLimit=true"  # extends call number from 500 to 10,000
-		fullContents = "&fullContents=true"  # Brings back full contents for Blog and Tumblr posts which are usually truncated around sea
-		url = '{}id={}{}{}{}{}'.format(endpoint, monitorID, self.authToken, self.dates, extendLimit, fullContents)
-		return url
-
-	def getJsonOb(self):
-		webURL = urllib.request.urlopen(self.url)
+	def getJsonOb(self,startD,endD):
+		webURL = urllib.request.urlopen(self.getURL(startD,endD))
 		data = webURL.read().decode('utf8')
 		theJSON = json.loads(data)
 		return theJSON
 
-	# @TODO check for more columns
+
+	def getURL(self,startD,endD):
+		endpoint = self.getEndPoint('posts')
+		extendLimit = "&extendLimit=true"  # extends call number from 500 to 10,000
+		fullContents = "&fullContents=true"  # Brings back full contents for Blog and Tumblr posts which are usually truncated around sea
+		url = '{}id={}{}{}{}{}'.format(endpoint, monitorID, self.authToken, self.getDates(startD,endD), extendLimit, fullContents)
+		return url
+
 	# columns for hexagon API object
 	def getColumnsData(self, hexagonObj):
 		data = pd.DataFrame(
@@ -91,16 +109,34 @@ class Hexagon:
 		)
 		return data
 
-	# get the hexagon data
-	# @TODO check if no of posts < 10000
-	def getData(self):
-		logging.info('[INFO] extraction of Hexagon data started')
-		JSON = self.getJsonOb()
+	def getJSONData(self,startD,endD):
+		JSON = self.getJsonOb(startD, endD)
 		df = pd.DataFrame([])
-		# if JSON['totalPostsAvailable'] <= 10000:
 		for iter in JSON['posts']:
 			data = self.getColumnsData(iter)
 			df = df.append(data, ignore_index=True)
+		return df
+
+	# if data > 10000 true else false
+	def checkVolumeData(self, startD, endD):
+		JSON = self.getJsonOb(startD, endD)
+		if (JSON['totalPostsAvailable'] > 10000):
+			return True
+		else:
+			return False
+
+	# @returns the hexagon data
+	def getData(self,startD,endD):
+		logging.info('[INFO] extraction of Hexagon data started')
+		df = pd.DataFrame([])
+		if (self.checkVolumeData(startD,endD)):
+			logging.info('[INFO] Data being extracted in batches')
+			startDates, endDates = self.getDateRange(startD,endD)
+			for startD,endD in zip(startDates,endDates):
+				data = self.getJSONData(startD,endD)
+				df.append(data,ignore_index = True)
+		else:
+			df = self.getJSONData(startD,endD)
 		logging.info('[INFO] all data extracted from hexagon')
 		return df
 

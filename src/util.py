@@ -8,6 +8,7 @@ import os
 
 logdir =  os.path.abspath("../output/hexagon/")
 format = "%(asctime)-15s      %(message)s"
+dateFormat = "%Y-%m-%d"
 
 def output_to_csv(df,filename):
     df.to_csv(path_or_buf=filename)
