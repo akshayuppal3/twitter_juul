@@ -6,7 +6,7 @@
 # @Author : Akshay
 
 from authentication import Authenticate
-from TweepyScraping import Preprocess
+from TweepyScraping import Twitter
 import requests
 import urllib.request
 import json
@@ -19,9 +19,10 @@ import logging
 import tweepy
 import datetime
 
-startDate = '2018-10-01'
-endDate = '2018-10-03'
+startDate = '2017-05-01'
+endDate = '2018-05-02'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
+testLimit = 5
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
 # logger = logging.getLogger("logger")
@@ -29,11 +30,11 @@ authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
 baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
 class Hexagon:
-	def __init__(self):
+	def __init__(self,testMode = False):
 		self.authenticateURL = authenticateURL
 		self.authToken = self.getAuthToken()
 		self.baseUrl = baseUrl
-		self.hexagonData = self.getData(startDate,endDate)
+		self.hexagonData = self.getHexagonData(startDate, endDate, testMode= testMode)
 
 	def getAuthToken(self):
 		ob = Authenticate()
@@ -52,13 +53,14 @@ class Hexagon:
 				authToken = "&auth=" + authToken
 				return (authToken)
 		except requests.ConnectionError as e:
-			print(e)
+			logging.error('[ERROR] %s',e)
 
 	# @paramms startD,endD : type <string>
 	def getDates(self,startD,endD):
 		dates = "&start=" + startD + "&end=" + endD  # Combines start and end date into format needed for API call
 		return dates
 
+	# responsible for splitting a date range to individual months
 	# @returns start_dates and end_Dates in str format
 	def getDateRange(self,begin,end):
 		dt_start = datetime.datetime.strptime(begin,util.dateFormat)
@@ -125,9 +127,11 @@ class Hexagon:
 		else:
 			return False
 
+	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data
-	def getData(self,startD,endD):
+	def getHexagonData(self, startD, endD, testMode = False):
 		logging.info('[INFO] extraction of Hexagon data started')
+		logging.info('[INFO] test mode selected') if testMode == True else None
 		df = pd.DataFrame([])
 		if (self.checkVolumeData(startD,endD)):
 			logging.info('[INFO] Data being extracted in batches')
@@ -138,20 +142,20 @@ class Hexagon:
 		else:
 			df = self.getJSONData(startD,endD)
 		logging.info('[INFO] all data extracted from hexagon')
-		return df
+		return df[0:testLimit] if (testMode == True) else df   # changes for the test mode
 
 	def getBatchTwitter(self,tweetIDs,friendOpt = False):
 		data = pd.DataFrame([])
-		ob = Preprocess()
+		ob = Twitter()
 		api = ob.api
 		try:
-			user = api.statuses_lookup(tweetIDs)
+			user = api.statuses_lookup(tweetIDs,include_entities=True,tweet_mode='extended')  # update as per for full_text
 			for idx, statusObj in enumerate(user):
 				userData = ob.getTweetObject(tweetObj=statusObj, friendOpt=friendOpt)
 				data = data.append(userData, ignore_index=True)
 			return data
 		except tweepy.TweepError as e:
-			logging.info("[Error] " + e.reason)
+			logging.error("[Error] " + e.reason)
 
 	def getTwitterData(self, df, friendOpt = False):
 		if 'tweetID' in df:
@@ -167,29 +171,31 @@ class Hexagon:
 			else:
 				logging.info("[INFO] single batch started for Twitter data")
 				data = self.getBatchTwitter(df.tweetID.tolist(),friendOpt=friendOpt)
+			data.set_index('tweetId')
 			return data
 
 	def output(self, df, filename):
-		os.chdir('../output/hexagon')
+		os.chdir('../input/')
 		util.output_to_csv(df, filename=filename)
 		logging.info("[INFO] CSV file created")
 
 def main():
 	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
-	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', required=True)
-	parser.add_argument('-f', '--filename', help = 'specify the name of teh file to be stored', default="hexagonDataset.csv")
+	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', default=False, type=util.str2bool)
+	parser.add_argument('-f', '--filename', help = 'specify the name of the file to be stored', default="hexagonDataset.csv")
+	parser.add_argument('-t', '--testMode', help = 'test modde to get only sample data, boolean True or False',type=util.str2bool,default=False)
 	args = vars(parser.parse_args())
-	ob = Hexagon()
+	option = True if (args['friendOption'] == True) else False
+	logging.info('[NEW] ---------------------------------------------')
+	logging.info('[INFO] new extraction process started ' + ('with friends option' if option == True else 'without the friends option'))
+	test_mode = True if (args['testMode'] == True) else False
+	ob = Hexagon(test_mode)
 	df = ob.hexagonData
-	if (args['friendOption'] == True):
-		option = True
-	else:
-		option = False
 	filename = args['filename']
-	logging.info("[INFO] new extraction process started with " + ("With Friend option" if option == True else "Without friend option"))
 	df2 = ob.getTwitterData(df,friendOpt=option)
 	ob.output(df2, filename)
 	logging.info("[INFO] job completed succesfully")
+	util.playSound()               # just for testing
 
 if (__name__ == '__main__'):
 	main()
