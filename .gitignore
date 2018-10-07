@@ -2,7 +2,6 @@
 # Virtual env
 venv
 .idea
-input/*
 
 summary_of_papers
 weekly_reports
