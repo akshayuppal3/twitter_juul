@@ -70,6 +70,7 @@ class Twitter:
 					'tweetId': tweetObj.id_str,
 					'userID': tweetObj.user.id,
 					'tweetText': text,
+					'tweetCreatedAt': tweetObj.created_at,
 					'parentID': 'None',
 					'favourites_count': tweetObj.user.favourites_count,
 					'userLocation': tweetObj.user.location,

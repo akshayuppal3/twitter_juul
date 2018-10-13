@@ -16,7 +16,7 @@ sound_freq = 440  # Hz
 
 
 def output_to_csv(df, filename):
-	df.to_csv(path_or_buf=filename, index=False)
+	df.to_csv(path_or_buf=filename,index=None)
 
 
 # conversion of str to bool
