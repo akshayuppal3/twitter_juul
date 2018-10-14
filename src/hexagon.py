@@ -32,10 +32,13 @@ baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
 class Hexagon:
 	def __init__(self,testMode = False):
+		ob = Twitter()
 		self.authenticateURL = authenticateURL
 		self.authToken = self.getAuthToken()
 		self.baseUrl = baseUrl
+		self.api = ob.api
 		self.hexagonData = self.getHexagonData(startDate, endDate, testMode= testMode)
+
 
 	def getAuthToken(self):
 		ob = Authenticate()
@@ -55,6 +58,7 @@ class Hexagon:
 				return (authToken)
 		except requests.ConnectionError as e:
 			logging.error('[ERROR] %s',e)
+
 
 	# @paramms startD,endD : type <string>
 	def getDates(self,startD,endD):
@@ -179,7 +183,7 @@ class Hexagon:
 		data = pd.DataFrame([])
 		final_data = pd.DataFrame([])
 		if not df_twitter.empty:
-			for parentId,friendList in zip(df_twitter.userID,df_twitter.friendList):
+			for parentId,friendList in tqdm(zip(df_twitter.userID,df_twitter.friendList)):
 				if type(friendList) == str:
 					friends = ast.literal_eval(friendList)  # as the friend list in the dataframe is string
 				else:
@@ -197,6 +201,29 @@ class Hexagon:
 					continue        # in case of an empty friends list
 				final_data = final_data.append(data)         #appending all the friends for a user to the record
 		return final_data
+
+	def getUserTimelineData(self,user,test_mode = False):
+		ob = Twitter()
+		userData = pd.DataFrame([])
+		if user is not None:
+			count = util.testLimit if test_mode == True else util.userTimelineLimit
+			status = self.api.user_timeline(user,count = count, tweet_mode = 'extended')
+			for statusObj in status:
+				data = ob.getTweetObject(statusObj,test_mode=test_mode)
+				userData = userData.append(data)
+			return userData
+
+	def getuserTimeline(self,df_twitter,test_mode = False):
+		finalData = pd.DataFrame([])
+		if not df_twitter.empty:
+			users = df_twitter.userID.tolist()
+			unique_users = set(users)
+			for user in tqdm(unique_users):
+				userData = self.getUserTimelineData(user,test_mode=test_mode)
+				finalData = finalData.append(userData)
+			return finalData
+		else:
+			return None
 
 	# getting all of the twitter data
 	def getTwitterData(self, df, friendOpt = False,test_mode = False):
@@ -225,10 +252,13 @@ def main():
 	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
 	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', default=False, type=util.str2bool)
 	parser.add_argument('-f', '--filenameTwitter', help = 'specify the name of the file to be stored', default="hexagonData.csv")
-	parser.add_argument('-y', '--filenameFriends', help = 'specify the name of the file to be stored', default="friendsData.csv" )
+	parser.add_argument('-f2', '--filenameFriends', help = 'specify the name of the file for following data(friends)', default="friendsData.csv" )
+	parser.add_argument('-f3', '--filenameUserTimeline', help ='specify the name of the file for user timeline', default="userTimelineData.csv")
 	parser.add_argument('-t', '--testMode', help = 'test modde to get only sample data, boolean True or False',type=util.str2bool,default=False)
+	parser.add_argument('-u', '--userOption', help= 'If user timeline for each user needs to be extracted or not',default=False ,type=util.str2bool)
 	args = vars(parser.parse_args())
 	option = True if (args['friendOption'] == True) else False
+	userOption = True if (args['userOption'] == True) else False
 	logging.info('[NEW] ---------------------------------------------')
 	logging.info('[INFO] new extraction process started ' + ('with friends option' if option == True else 'without the friends option'))
 	test_mode = True if (args['testMode'] == True) else False
@@ -236,12 +266,17 @@ def main():
 	df = ob.hexagonData
 	filenameTwitter = args['filenameTwitter']
 	filenameFriends = args['filenameFriends']
+	filenameUserTimeline = args['filenameUserTimeline']
 	tweet_data = ob.getTwitterData(df, friendOpt=option, test_mode=test_mode)
 	ob.output(tweet_data, filenameTwitter)
 	if option == True:
 		logging.info("[INFO] extracting friends data")
 		friendsData = ob.getFriendData(tweet_data, test_mode=True)
 		ob.output(friendsData, filenameFriends)
+	if userOption == True:
+		logging.info("[INFO] user timeline extraction started..might take some time")
+		userTimeline = ob.getuserTimeline(tweet_data,test_mode = test_mode)
+		ob.output(userTimeline,filenameUserTimeline)
 	logging.info("[INFO] job completed succesfully")
 	util.playSound()               # just for testing
 

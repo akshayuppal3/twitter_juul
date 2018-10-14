@@ -11,7 +11,8 @@ import winsound
 logdir = os.path.abspath("../output/hexagon/")
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
-testLimit = 2
+testLimit = 5
+userTimelineLimit = 200 # limit for the no of tweets extracted from user timeline
 sound_duration = 1000  # millisecond
 sound_freq = 440  # Hz
 
