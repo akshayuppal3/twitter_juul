@@ -3,3 +3,4 @@ pandas
 numpy
 tweepy
 requests
+git+https://github.com/lwahedi/tweepy.git@master
