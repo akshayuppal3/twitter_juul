@@ -278,7 +278,7 @@ def main():
 		userTimeline = ob.getuserTimeline(tweet_data,test_mode = test_mode)
 		ob.output(userTimeline,filenameUserTimeline)
 	logging.info("[INFO] job completed succesfully")
-	util.playSound()               # just for testing
+	# util.playSound()               # just for testing
 
 if (__name__ == '__main__'):
 	main()
