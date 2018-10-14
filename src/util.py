@@ -11,9 +11,9 @@ import winsound
 logdir = os.path.abspath("../output/hexagon/")
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
+testLimit = 2
 sound_duration = 1000  # millisecond
 sound_freq = 440  # Hz
-
 
 def output_to_csv(df, filename):
 	df.to_csv(path_or_buf=filename,index=None)
@@ -28,7 +28,7 @@ def str2bool(v):
 	else:
 		raise argparse.ArgumentTypeError('Boolean value expected.')
 
-
+# @Deprecated
 # handle the rate limit (wait for 15min (API constarints))
 def limit_handler(cursor):
 	while True:
