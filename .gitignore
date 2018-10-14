@@ -6,8 +6,6 @@ venv
 summary_of_papers
 weekly_reports
 src/.gitignore
-src/authentication.py
-src/.gitignore
 src/CrimsonPosts.py
 output/*
 
