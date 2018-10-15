@@ -8,7 +8,7 @@ import os
 import argparse
 import winsound
 
-logdir = os.path.abspath("../output/hexagon/")
+logdir = os.path.abspath("../../output/hexagon/")
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5

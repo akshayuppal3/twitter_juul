@@ -21,7 +21,7 @@ import datetime
 import ast
 from tqdm import tqdm
 
-startDate = '2017-05-01'
+startDate = '2018-03-01'
 endDate = '2018-05-02'
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
@@ -244,7 +244,7 @@ class Hexagon:
 			return (df_twitter)
 
 	def output(self, df, filename):
-		os.chdir('../input/')
+		os.chdir('../../input/')
 		util.output_to_csv(df, filename=filename)
 		logging.info("[INFO] CSV file created")
 
