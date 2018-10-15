@@ -192,6 +192,7 @@ class Hexagon:
 				else:
 					friends = friendList
 				if len(friends) != 0:
+					friends = friends[0:util.friendLimit]  # limiting the data size as the friends> 1000 are having errors
 					if (len(friends) > 100):
 						batchSize = int(math.ceil(len(friends)/ 100))
 						for i in range(batchSize):
@@ -212,11 +213,15 @@ class Hexagon:
 		userData = pd.DataFrame([])
 		if user is not None:
 			count = util.testLimit if test_mode == True else util.userTimelineLimit
-			status = self.api.user_timeline(user,count = count, tweet_mode = 'extended')
-			for statusObj in status:
-				data = ob.getTweetObject(statusObj,test_mode=test_mode)
-				userData = userData.append(data)
-			return userData
+			try:
+				status = self.api.user_timeline(user,count = count, tweet_mode = 'extended')
+				for statusObj in status:
+					data = ob.getTweetObject(statusObj,test_mode=test_mode)
+					userData = userData.append(data)
+				return userData
+
+			except tweepy.TweepError as e:
+				logging.error("[Error] " + e.reason)
 
 	def getuserTimeline(self,df_twitter,test_mode = False):
 		finalData = pd.DataFrame([])
@@ -294,4 +299,8 @@ def main():
 
 if (__name__ == '__main__'):
 	main()
+	# ob = Hexagon(False, '2018-09-05',)
+	# df = ob.hexagonData
+	# tweet_data = ob.getTwitterData(df,friendOpt= True)
+	# ob.output(tweet_data,'hexagonDataNew.csv')
 

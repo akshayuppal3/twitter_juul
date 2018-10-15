@@ -13,6 +13,7 @@ format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
 userTimelineLimit = 200 # limit for the no of tweets extracted from user timeline
+friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
 
