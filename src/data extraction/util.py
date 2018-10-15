@@ -6,19 +6,19 @@ from time import sleep
 import tweepy
 import os
 import argparse
-import winsound
 
 logdir = os.path.abspath("../../output/hexagon/")
+inputdir = os.path.abspath("../../input/")
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
 userTimelineLimit = 200 # limit for the no of tweets extracted from user timeline
-sound_duration = 1000  # millisecond
-sound_freq = 440  # Hz
+startDate = '2018-05-01'
+endDate = '2018-05-02'
 
 def output_to_csv(df, filename):
-	df.to_csv(path_or_buf=filename,index=None)
-
+	if (df is not None and not df.empty):
+		df.to_csv(path_or_buf=filename,index=None)
 
 # conversion of str to bool
 def str2bool(v):
@@ -38,9 +38,3 @@ def limit_handler(cursor):
 		except tweepy.RateLimitError:
 			print("sleeping -rate limit exceeded")
 			sleep(15)
-
-
-# play a sound when the code completes
-
-def playSound():
-	winsound.Beep(sound_duration, sound_freq)
