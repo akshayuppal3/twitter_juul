@@ -141,16 +141,17 @@ class Hexagon:
 		if (self.checkVolumeData(startD,endD)):
 			logging.info('[INFO] Data being extracted in batches')
 			startDates, endDates = self.getDateRange(startD,endD)
-			for startD,endD in tqdm(zip(startDates,endDates)):
+			for startD,endD in tqdm(zip(startDates,endDates), total= len(startDates)):
 				data = self.getJSONData(startD,endD,testMode)
-				df.append(data,ignore_index = True)
+				df = df.append(data,ignore_index = True)
 		else:
 			df = self.getJSONData(startD,endD,testMode)
 		logging.info('[INFO] all data extracted from hexagon')
 		if (df.empty):
 			print("No valid data found for the specified date range")
 			logging.info('[INFO] no valid data found for the time range')
-		return df[0:util.testLimit] if (testMode == True) else df   # changes for the test mode
+		df = df[0:util.testLimit] if (testMode == True) else df   # changes for the test mode
+		return df
 
 	def getBatchTwitter(self,tweetIDs,parent_id = None,friendOpt = False,test_mode=False):
 		data = pd.DataFrame([])
@@ -185,7 +186,7 @@ class Hexagon:
 		data = pd.DataFrame([])
 		final_data = pd.DataFrame([])
 		if not df_twitter.empty:
-			for parentId,friendList in tqdm(zip(df_twitter.userID,df_twitter.friendList)):
+			for parentId,friendList in tqdm(zip(df_twitter.userID,df_twitter.friendList), total= len(df_twitter.userID)):
 				if type(friendList) == str:
 					friends = ast.literal_eval(friendList)  # as the friend list in the dataframe is string
 				else:
