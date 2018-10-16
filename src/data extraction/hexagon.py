@@ -20,7 +20,7 @@ import tweepy
 import datetime
 import ast
 from tqdm import tqdm
-
+import twintApi as tw
 
 monitorID = "11553243040"  # juulMonitor twitter filter ID (numeric field)
 
@@ -159,7 +159,7 @@ class Hexagon:
 		api = ob.api
 		try:
 			user = api.statuses_lookup(tweetIDs,include_entities=True,tweet_mode='extended')  # update as per for full_text
-			for idx, statusObj in tqdm(enumerate(user)):
+			for idx, statusObj in enumerate(tqdm(user)):
 				userData = ob.getTweetObject(tweetObj=statusObj, friendOpt=friendOpt,parentID = parent_id,test_mode=test_mode)
 				data = data.append(userData, ignore_index=True)
 			return data
@@ -255,6 +255,18 @@ class Hexagon:
 		else:
 			return (pd.DataFrame())    # Case for a blank dataframe
 
+	def getFriendsDataTwint(self,df):
+		ob = tw.ScrapeTwitter()
+		users = util.getUsers(df)
+		if users is not None:
+			df_friends = ob.followingData(users)
+			if not df_friends.empty:
+				return df_friends
+			else:
+				return pd.DataFrame([])
+		else:
+			return pd.DataFrame([])
+
 	def output(self, df, filename):
 		os.chdir(util.inputdir)
 		util.output_to_csv(df, filename=filename)
@@ -271,7 +283,7 @@ def main():
 	parser.add_argument('-s', '--startDate', help = 'Specify the start date/since for extraction', default=util.startDate)
 	parser.add_argument('-e', '--endDate', help = 'Specify the end date', default=datetime.datetime.today().strftime('%Y-%m-%d'))
 	args = vars(parser.parse_args())
-	option = True if (args['friendOption'] == True) else False
+	friendOpt = True if (args['friendOption'] == True) else False
 	userOption = True if (args['userOption'] == True) else False
 	logging.info('[NEW] ---------------------------------------------')
 	logging.info('[INFO] new extraction process started ' + ('with friends option' if option == True else 'without the friends option'))
@@ -284,12 +296,13 @@ def main():
 	filenameFriends = args['filenameFriends']
 	filenameUserTimeline = args['filenameUserTimeline']
 	if (not df.empty):
-		tweet_data = ob.getTwitterData(df, friendOpt=option, test_mode=test_mode)
+		tweet_data = ob.getTwitterData(df, friendOpt=False, test_mode=test_mode)   # using twint for friends data
 		ob.output(tweet_data, filenameTwitter)
-		if option == True:
+		if friendOpt == True:
 			logging.info("[INFO] extracting friends data")
-			friendsData = ob.getFriendData(tweet_data, test_mode=True)
+			friendsData = ob.getFriendsDataTwint(tweet_data)
 			ob.output(friendsData, filenameFriends)
+			# friendsData = ob.getFriendData(tweet_data, test_mode=True)
 		if userOption == True:
 			logging.info("[INFO] user timeline extraction started..might take some time")
 			userTimeline = ob.getuserTimeline(tweet_data,test_mode = test_mode)

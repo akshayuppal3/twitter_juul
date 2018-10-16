@@ -53,13 +53,9 @@ class Twitter:
 
 	def getFriendList(self,tweetObj,test_mode= False,friendOpt = False):
 		try:
-			print("in friend list")
 			if (friendOpt == True):
-				print("in the friend list option")
-				print("twetobj user id", tweetObj.user.id)
 				friendList = self.api.friends_ids(tweetObj.user.id,count= util.friendLimit)           # returns list of friends (max of 5000)
 				friendList = friendList if test_mode == False else friendList[0:100]
-				print("len of friend list is ", len(friendList))
 			else:
 				friendList = "None"
 			return friendList
@@ -69,10 +65,8 @@ class Twitter:
 	# @params passing tweet, friendOpt and userinfo(in case of following)
 	# returns data frame of tweet and user info
 	def getTweetObject(self, tweetObj, friendOpt=False, parentID = None,test_mode = False):
-		print("in get tweet object is ")
 		if tweetObj is not None:
 			friendList = self.getFriendList(tweetObj,test_mode = test_mode,friendOpt=friendOpt)
-			print("friend list length",len(friendList))
 			if parentID is None:
 				if 'retweeted_status' in tweetObj._json.keys():
 					text = tweetObj.retweeted_status.full_text.replace("\n", " ")
