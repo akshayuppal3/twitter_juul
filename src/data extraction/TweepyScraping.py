@@ -54,7 +54,7 @@ class Twitter:
 	def getFriendList(self,tweetObj,test_mode= False,friendOpt = False):
 		try:
 			if (friendOpt == True):
-				friendList = self.api.friends_ids(tweetObj.user.id)           # returns list of friends (max of 5000)
+				friendList = self.api.friends_ids(tweetObj.user.id,count= util.friendLimit)           # returns list of friends (max of 5000)
 				friendList = friendList if test_mode == False else friendList[0:100]
 			else:
 				friendList = "None"
