@@ -25,7 +25,7 @@ class ScrapeTwitter:
 	def __init__(self):
 		self.outputPath = os.path.abspath("../output/twintData/")
 		self.userLimit = 1
-		self.followingLimit = 1
+		self.followingLimit = 100
 
 	def getTweetData(self):
 		param = self.twintParam(op="Search")
@@ -55,7 +55,6 @@ class ScrapeTwitter:
 	def followingData(self, userList):
 		param = self.twintParam(op="Following")
 		dfFoll = pd.DataFrame([])
-		userList = userList[0:1]       # @TODO to beremoved
 		for idx, friend in (enumerate(tqdm(userList))):
 			param.Username = friend
 			param.Output = str(util.twintDir + "/juulFollowing" + str(friend) + ".csv")
@@ -66,7 +65,7 @@ class ScrapeTwitter:
 				dfFoll.assign(Parent=param.Username)  # @TODO add the parent field to the table
 				dfFoll = dfFoll.append(dfFoll, ignore_index=True)
 			else:
-				print(idx," no following found for ",friend)
+				logging.info(" no following found for %s" % friend)
 		if (not dfFoll.empty):
 			return dfFoll
 		else:
