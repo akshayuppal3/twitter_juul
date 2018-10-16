@@ -257,7 +257,7 @@ class Hexagon:
 
 	def getFriendsDataTwint(self,df):
 		ob = tw.ScrapeTwitter()
-		users = util.getUsers(df)
+		users = util.getUsers(df,type='ID')
 		if users is not None:
 			df_friends = ob.followingData(users)
 			if not df_friends.empty:
@@ -286,7 +286,7 @@ def main():
 	friendOpt = True if (args['friendOption'] == True) else False
 	userOption = True if (args['userOption'] == True) else False
 	logging.info('[NEW] ---------------------------------------------')
-	logging.info('[INFO] new extraction process started ' + ('with friends option' if option == True else 'without the friends option'))
+	logging.info('[INFO] new extraction process started ' + ('with friends option' if friendOpt == True else 'without the friends option'))
 	test_mode = True if (args['testMode'] == True) else False
 	startDate = args['startDate']
 	endDate = args['endDate']
