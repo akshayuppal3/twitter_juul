@@ -14,7 +14,7 @@ import tweepy
 import os
 from tqdm import tqdm
 from openpyxl import load_workbook
-
+import time
 
 logging.basicConfig(level="INFO", format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
@@ -49,24 +49,31 @@ class twitter_following():
         users = util.getUsers(df,type= 'ID')
         try:
             if users:
+                backoff_counter = 0
                 for user in tqdm(users):
-                    friendList = self.api.friends_ids(user,
-                                                      count=util.friendLimit)  # returns list of friends
-                    df = pd.DataFrame({'userID':user,
-                                       'following':[friendList]}, index=[0])
-                    writer = pd.ExcelWriter(filepath, engine='openpyxl')
-                    if os.path.isfile(filepath):
-                        writer.book = load_workbook(filepath)
-                        writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
-                        max_row = writer.book.active.max_row
-                        sheetname = writer.book.active.title
-                        df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
-                    else:
-                        df.to_excel(writer, index=False)
                     try:
-                        writer.save()
-                    except OSError:
-                        logging.error("File is open: or permission denied")
+                        friendList = self.api.friends_ids(user,
+                                                          count=util.friendLimit)  # returns list of friends
+                        df = pd.DataFrame({'userID':user,
+                                           'following':[friendList]}, index=[0])
+                        writer = pd.ExcelWriter(filepath, engine='openpyxl')
+                        if os.path.isfile(filepath):
+                            writer.book = load_workbook(filepath)
+                            writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+                            max_row = writer.book.active.max_row
+                            sheetname = writer.book.active.title
+                            df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
+                        else:
+                            df.to_excel(writer, index=False)
+                        try:
+                            writer.save()
+                        except OSError:
+                            logging.error("File is open: or permission denied")
+                    except Exception as e:
+                        logging.error(e)
+                        time.sleep(60 * backoff_counter)
+                        backoff_counter += 1
+                        continue
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
