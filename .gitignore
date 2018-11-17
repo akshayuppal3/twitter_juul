@@ -8,7 +8,7 @@ weekly_reports
 src/.gitignore
 src/CrimsonPosts.py
 output/*
-
+*.authentication.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
