@@ -83,7 +83,6 @@ def readCSV(path):
     try:
         df = pd.read_csv(path, lineterminator='\n', index_col=0)
         if "userName\r" in df:  # windows problem
-            print("removing carriage")
             df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
             df.rename(columns={'userName\r': "userName"}, inplace=True)
         return df
