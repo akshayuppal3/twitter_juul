@@ -12,7 +12,6 @@ import argparse
 import logging
 import tweepy
 import os
-import openpyxl
 from tqdm import tqdm
 from openpyxl import load_workbook
 
