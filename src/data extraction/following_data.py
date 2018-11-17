@@ -50,7 +50,7 @@ class twitter_following():
         try:
             if users:
                 backoff_counter = 0
-                for user in tqdm(users):
+                for index,user in enumerate(tqdm(users)):
                     try:
                         friendList = self.api.friends_ids(user,
                                                           count=util.friendLimit)  # returns list of friends
@@ -75,7 +75,7 @@ class twitter_following():
                         backoff_counter += 1
                         continue
                     finally:
-                        logging.error("oops we did it again")
+                        logging.error("current user",user,"with counter ",index)
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
