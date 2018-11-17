@@ -69,11 +69,13 @@ class twitter_following():
                             writer.save()
                         except OSError:
                             logging.error("File is open: or permission denied")
-                    except Exception as e:
-                        logging.error(e)
+                    except:
+                        logging.error("Some error in connection")
                         time.sleep(60 * backoff_counter)
                         backoff_counter += 1
                         continue
+                    finally:
+                        logging.error("oops we did it again")
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
