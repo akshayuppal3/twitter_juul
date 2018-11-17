@@ -1,0 +1,5 @@
+{
+  "logdir" : "/output/hexagon/",
+  "twintDir" : "/output/twintData",
+  "inputdir" : "/input/"
+}

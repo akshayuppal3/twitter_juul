@@ -8,10 +8,17 @@ import os
 import argparse
 import pandas as pd
 import pandas.io.common
+from pathlib import Path
+import json
 
-logdir = os.path.abspath("../../output/hexagon/")
-twintDir = os.path.abspath("../../output/twintData")
-inputdir = os.path.abspath("../../input/")
+dir_name = os.getcwd()
+path = Path(os.getcwd()).parent.parent
+filepath = os.path.join(path, 'config.json')
+with open(filepath) as f:
+    data = json.load(f)
+logdir = os.path.abspath(data['logdir'])
+twintDir = os.path.abspath(data['twintdir'])
+inputdir = os.path.abspath(data['inputdir'])
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
@@ -68,6 +75,7 @@ def getUsers(df, type):
                 return None
     else:
         return None
+
 
 ##read CSV to generate dataframe
 ##@return df
