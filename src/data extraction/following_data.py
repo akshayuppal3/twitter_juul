@@ -37,7 +37,7 @@ class twitter_following():
         author = OAuthHandler(consumer_key, consumer_secret)
         author.set_access_token(access_token, access_secret)
         # change to accomodate rate limit errors
-        api = tweepy.API(author, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+        api = tweepy.API(author, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, retry_count=5, retry_delay=5)
         return (api)
 
     # @param df, filename , testMode(bool)
