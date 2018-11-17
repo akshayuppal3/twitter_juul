@@ -13,6 +13,7 @@ import logging
 import tweepy
 import os
 import openpyxl
+from tqdm import tqdm
 from openpyxl import load_workbook
 
 
@@ -46,10 +47,10 @@ class twitter_following():
     def getFriendsData(self,df,filename,testMode =False):
         path = os.getcwd()
         filepath = os.path.join(path,filename)
-        users = util.getUsers(df,type= 'id')
+        users = util.getUsers(df,type= 'ID')
         try:
-            if users is not None:
-                for user in users:
+            if users:
+                for user in tqdm(users):
                     friendList = self.api.friends_ids(user,
                                                       count=util.friendLimit)  # returns list of friends
                     df = pd.DataFrame({'userID':user,
@@ -73,7 +74,7 @@ class twitter_following():
 
 if __name__ == '__main__':
     ob = twitter_following()
-    parser = argparse.ArgumentParser(description='Extracting data from twintAPI')
+    parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=True)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
     args = vars(parser.parse_args())
@@ -82,7 +83,7 @@ if __name__ == '__main__':
         logging.info('new extraction process started')
         filename_input = args['inputFile']
         filename_output = args['outputFile']
-        os.path.join(util.inputdir,filename_output)
+        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
         df = util.readCSV(filename_input)
         ob.getFriendsData(df,filename_output)
         logging.info("File creation completed")
