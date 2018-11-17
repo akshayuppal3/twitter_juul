@@ -12,13 +12,13 @@ from pathlib import Path
 import json
 
 dir_name = os.getcwd()
-path = Path(os.getcwd()).parent.parent
-filepath = os.path.join(path, 'config.json')
+path1 = Path(os.getcwd()).parent.parent
+filepath = os.path.join(path1, 'config.json')
 with open(filepath) as f:
     data = json.load(f)
-logdir = os.path.abspath(data['logdir'])
-twintDir = os.path.abspath(data['twintdir'])
-inputdir = os.path.abspath(data['inputdir'])
+logdir = os.path.join(path1,data['logdir'])
+twintDir = os.path.join(path1,data['twintdir'])
+inputdir = os.path.join(path1,data['inputdir'])
 format = "%(asctime)-15s      %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
@@ -81,7 +81,11 @@ def getUsers(df, type):
 ##@return df
 def readCSV(path):
     try:
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, lineterminator='\n', index_col=0)
+        if "userName\r" in df:  # windows problem
+            print("removing carriage")
+            df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
+            df.rename(columns={'userName\r': "userName"}, inplace=True)
         return df
     except FileNotFoundError:
         print("[ERROR] file not found")
