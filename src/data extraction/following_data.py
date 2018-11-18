@@ -49,7 +49,6 @@ class twitter_following():
         users = util.getUsers(df,type= 'ID')
         try:
             if users:
-                backoff_counter = 0
                 for index,user in enumerate(tqdm(users)):
                     try:
                         friendList = self.api.friends_ids(user,
@@ -71,8 +70,7 @@ class twitter_following():
                             logging.error("File is open: or permission denied")
                     except:
                         logging.error("Some error in connection")
-                        time.sleep(60 * backoff_counter)
-                        backoff_counter += 1
+                        time.sleep(60 * 10)
                         continue
                     finally:
                         logging.error("current user",user,"with counter ",index)
