@@ -79,8 +79,8 @@ def getUsers(df, type):
         return None
 
 
-##read CSV to generate dataframe
-##@return df
+# read CSV to generate dataframe
+# @return df
 def readCSV(path):
     try:
         df = pd.read_csv(path, lineterminator='\n', index_col=0)
@@ -93,8 +93,21 @@ def readCSV(path):
     except pd.io.common.EmptyDataError:
         print("[ERROR] empty file")
 
-##Convert df to excel
-## appends to the excel file path specified(or create a nex file with that name)
+# read xlsx file as csv and return dataframe
+def read_excel(path):
+    try:
+        df = pd.read_excel(path, 'Sheet1', index_col=None)
+        if "userName\r" in df:  # windows problem
+            df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
+            df.rename(columns={'userName\r': "userName"}, inplace=True)
+        return df
+    except FileNotFoundError:
+        print("[ERROR] file not found")
+    except pd.io.common.EmptyDataError:
+        print("[ERROR] empty file")
+
+# Convert df to excel
+# appends to the excel file path specified(or create a nex file with that name)
 def df_write_excel(df,filepath):
     writer = pd.ExcelWriter(filepath, engine='openpyxl')
     if os.path.isfile(filepath):
@@ -111,7 +124,7 @@ def df_write_excel(df,filepath):
         print("File is open: or permission denied")
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
-    # returns data frame of tweet and user info
+# returns data frame of tweet and user info
 def getTweetObject(tweetObj, parentID):
     data = pd.DataFrame.from_records(
         [{

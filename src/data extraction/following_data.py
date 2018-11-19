@@ -88,12 +88,12 @@ class twitter_following():
     # return None
     # get the detailed following data for the users and write to excel
     def get_detail_friends_data(self,df,output_path):
-        for index,row in df.iterrows():
+        for index,row in tqdm(df.iterrows()):
             parent_id = row['userID']
             friends_data = row['following']   # iterating over all of the friends data for each user
             if len(friends_data) > 100:       # as api.lookup users take data in batch of 100
                 batch_size = int(math.ceil(len(friends_data) / 100))
-                for i in range(batch_size):
+                for i in tqdm(range(batch_size)):
                     dfBat = friends_data[(100 * i): (100 * (i + 1))]
                     temp = self.getFriendBatch(dfBat, parent_id)
                     util.df_write_excel(temp,output_path)   # write the data to excel file
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         filename_input = args['inputFile2']
         filename_output = args['outputFile2']
         filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
-        df = util.readCSV(filename_input)
+        df = util.read_excel(filename_input)
         ob.get_detail_friends_data(df,filename_output)
         logging.info("File creation of detailed user completed")
 
