@@ -15,6 +15,7 @@ import os
 from tqdm import tqdm
 from openpyxl import load_workbook
 import time
+import math
 
 logging.basicConfig(level="INFO", format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
@@ -40,12 +41,11 @@ class twitter_following():
         api = tweepy.API(author, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, retry_count=5, retry_delay=5)
         return (api)
 
+
     # @param df, filename , testMode(bool)
     # @return None
     # writes to an excel file
-    def getFriendsData(self,df,filename,testMode =False):
-        path = os.getcwd()
-        filepath = os.path.join(path,filename)
+    def getFriendsData(self,df,output_path):
         users = util.getUsers(df,type= 'ID')
         try:
             if users:
@@ -55,34 +55,60 @@ class twitter_following():
                                                           count=util.friendLimit)  # returns list of friends
                         df = pd.DataFrame({'userID':user,
                                            'following':[friendList]}, index=[0])
-                        writer = pd.ExcelWriter(filepath, engine='openpyxl')
-                        if os.path.isfile(filepath):
-                            writer.book = load_workbook(filepath)
-                            writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
-                            max_row = writer.book.active.max_row
-                            sheetname = writer.book.active.title
-                            df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
-                        else:
-                            df.to_excel(writer, index=False)
-                        try:
-                            writer.save()
-                        except OSError:
-                            logging.error("File is open: or permission denied")
+                        util.df_write_excel(df,output_path)
                     except:
                         logging.error("Some error in connection")
                         time.sleep(60 * 10)
                         continue
                     finally:
-                        logging.error("current user",user,"with counter ",index)
+                        print("current user",user,"with counter ",index)
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
 
+    # @return DataFrame @ param friends ID and parent ID
+    # takes batch of friend ids and returns detailed information of user
+    def getFriendBatch(self, friendIds, parent_id):
+        api = self.api
+        data = pd.DataFrame([])
+        try:
+            user = api.lookup_users(friendIds, include_entities=True)  # api to look for user (in batch of 100)
+            for idx, statusObj in enumerate(user):
+                userData = util.getTweetObject(tweetObj=statusObj, parentID=parent_id)
+                data = data.append(userData, ignore_index=True)
+            return data
+
+        except tweepy.TweepError as e:
+            logging.error("[Error] " + e.reason)
+
+        except:
+            logging.error("[lookup users] Some error in api or connection")
+            time.sleep(60 * 10)
+
+    # return None
+    # get the detailed following data for the users and write to excel
+    def get_detail_friends_data(self,df,output_path):
+        for index,row in df.iterrows():
+            parent_id = row['userID']
+            friends_data = row['following']   # iterating over all of the friends data for each user
+            if len(friends_data) > 100:       # as api.lookup users take data in batch of 100
+                batch_size = int(math.ceil(len(friends_data) / 100))
+                for i in range(batch_size):
+                    dfBat = friends_data[(100 * i): (100 * (i + 1))]
+                    temp = self.getFriendBatch(dfBat, parent_id)
+                    util.df_write_excel(temp,output_path)   # write the data to excel file
+            else:
+                data = self.getFriendBatch(friends_data, parent_id)
+                util.df_write_excel(data,output_path)
+
+
 if __name__ == '__main__':
     ob = twitter_following()
     parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
-    parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=True)
+    parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
+    parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
+    parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
@@ -92,7 +118,14 @@ if __name__ == '__main__':
         filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
         df = util.readCSV(filename_input)
         ob.getFriendsData(df,filename_output)
-        logging.info("File creation completed")
+        logging.info("File creation of basic user and following completed")
+    if (args['inputFile2']):
+        filename_input = args['inputFile2']
+        filename_output = args['outputFile2']
+        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        df = util.readCSV(filename_input)
+        ob.get_detail_friends_data(df,filename_output)
+        logging.info("File creation of detailed user completed")
 
 
 

@@ -10,6 +10,8 @@ import pandas as pd
 import pandas.io.common
 from pathlib import Path
 import json
+from openpyxl import load_workbook
+
 
 dir_name = os.getcwd()
 path1 = Path(os.getcwd()).parent.parent
@@ -90,3 +92,51 @@ def readCSV(path):
         print("[ERROR] file not found")
     except pd.io.common.EmptyDataError:
         print("[ERROR] empty file")
+
+##Convert df to excel
+## appends to the excel file path specified(or create a nex file with that name)
+def df_write_excel(df,filepath):
+    writer = pd.ExcelWriter(filepath, engine='openpyxl')
+    if os.path.isfile(filepath):
+        writer.book = load_workbook(filepath)
+        writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+        max_row = writer.book.active.max_row
+        sheetname = writer.book.active.title
+        df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
+    else:
+        df.to_excel(writer, index=False)       #in case the file does not exists
+    try:
+        writer.save()
+    except OSError:
+        print("File is open: or permission denied")
+
+# @params passing tweet, friendOpt and userinfo(in case of following)
+    # returns data frame of tweet and user info
+def getTweetObject(tweetObj, parentID):
+    data = pd.DataFrame.from_records(
+        [{
+            'userID': tweetObj.id,
+            'parentID': parentID,
+            'userName': tweetObj.name,
+            'userDescription': tweetObj.description,
+            'userCreatedAt': tweetObj.created_at,
+            'userLocation': tweetObj.location,
+            'favourites_count': tweetObj.favourites_count,
+            'friendsCount': tweetObj.friends_count,
+            'userFollowersCount': tweetObj.followers_count,
+            'listedCount': tweetObj.listed_count,
+            'lang': tweetObj.lang,
+            'url': tweetObj.url,
+            'imageurl': tweetObj.profile_image_url,
+            'userVerified': tweetObj.verified,
+            'isProtected': tweetObj.protected,
+            'notifications': tweetObj.notifications,
+            'statusesCount': tweetObj.statuses_count,
+            'geoEnabled': tweetObj.geo_enabled,
+            'contributorEnabled': tweetObj.contributors_enabled,
+            # 'status': tweetObj.status,
+            'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
+            'withheldScope': tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
+        }], index=[0])
+    return (data)
+
