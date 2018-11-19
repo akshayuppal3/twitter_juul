@@ -13,7 +13,7 @@ import logging
 import tweepy
 import os
 from tqdm import tqdm
-from openpyxl import load_workbook
+import ast
 import time
 import math
 
@@ -61,7 +61,7 @@ class twitter_following():
                         time.sleep(60 * 10)
                         continue
                     finally:
-                        print("current user",user,"with counter ",index)
+                        print(index)
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
@@ -73,33 +73,41 @@ class twitter_following():
         data = pd.DataFrame([])
         try:
             user = api.lookup_users(friendIds, include_entities=True)  # api to look for user (in batch of 100)
-            for idx, statusObj in enumerate(user):
-                userData = util.getTweetObject(tweetObj=statusObj, parentID=parent_id)
-                data = data.append(userData, ignore_index=True)
-            return data
+            if user:
+                for idx, statusObj in enumerate(user):
+                    userData = util.getTweetObject(tweetObj=statusObj, parentID=parent_id)
+                    data = data.append(userData, ignore_index=True)
+                return data
+            else:
+                print("no user found for the batch")
 
         except tweepy.TweepError as e:
             logging.error("[Error] " + e.reason)
+            time.sleep(60 * 10)
+            self.getFriendsData(friendIds, parent_id)
 
         except:
             logging.error("[lookup users] Some error in api or connection")
             time.sleep(60 * 10)
+            self.getFriendsData(friendIds, parent_id)
 
     # return None
     # get the detailed following data for the users and write to excel
     def get_detail_friends_data(self,df,output_path):
         for index,row in tqdm(df.iterrows()):
             parent_id = row['userID']
-            friends_data = row['following']   # iterating over all of the friends data for each user
+            friends_data = ast.literal_eval(row['following'])   # as data as interpreted as string instead of list
             if len(friends_data) > 100:       # as api.lookup users take data in batch of 100
                 batch_size = int(math.ceil(len(friends_data) / 100))
                 for i in tqdm(range(batch_size)):
                     dfBat = friends_data[(100 * i): (100 * (i + 1))]
-                    temp = self.getFriendBatch(dfBat, parent_id)
-                    util.df_write_excel(temp,output_path)   # write the data to excel file
+                    friends_detailed = self.getFriendBatch(dfBat, parent_id)
+                    if friends_detailed is not None:
+                        util.df_write_excel(friends_detailed,output_path)   # write the data to excel file
             else:
-                data = self.getFriendBatch(friends_data, parent_id)
-                util.df_write_excel(data,output_path)
+                friends_detailed = self.getFriendBatch(friends_data, parent_id)
+                if friends_detailed is not None:
+                    util.df_write_excel(friends_detailed,output_path)
 
 
 if __name__ == '__main__':

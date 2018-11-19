@@ -94,12 +94,10 @@ def readCSV(path):
         print("[ERROR] empty file")
 
 # read xlsx file as csv and return dataframe
+# @return df @param filepath
 def read_excel(path):
     try:
         df = pd.read_excel(path, 'Sheet1', index_col=None)
-        if "userName\r" in df:  # windows problem
-            df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
-            df.rename(columns={'userName\r': "userName"}, inplace=True)
         return df
     except FileNotFoundError:
         print("[ERROR] file not found")
