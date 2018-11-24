@@ -96,7 +96,7 @@ class twitter_following():
     def get_detail_friends_data(self,df,output_path):
         if df is not None:
             with tqdm(total=(len(list(df.iterrows())))) as pbar:
-                for index,row in tqdm(df.iterrows()):
+                for index,row in (df.iterrows()):
                     pbar.update(1)                                                # handling tqdm for pandas
                     parent_id = row['userID']
                     friends_data = ast.literal_eval(row['following'])             # as data as interpreted as string instead of list
