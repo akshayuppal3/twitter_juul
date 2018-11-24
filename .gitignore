@@ -8,7 +8,7 @@ weekly_reports
 src/.gitignore
 src/CrimsonPosts.py
 output/*
-*.authentication
+*.authentication.py
 
 src/data\ extraction/authentication.py
 
