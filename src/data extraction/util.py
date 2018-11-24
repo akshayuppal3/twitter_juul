@@ -11,6 +11,7 @@ import pandas.io.common
 from pathlib import Path
 import json
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import IllegalCharacterError
 
 
 dir_name = os.getcwd()
@@ -107,19 +108,26 @@ def read_excel(path):
 # Convert df to excel
 # appends to the excel file path specified(or create a nex file with that name)
 def df_write_excel(df,filepath):
-    writer = pd.ExcelWriter(filepath, engine='openpyxl')
-    if os.path.isfile(filepath):
-        writer.book = load_workbook(filepath)
-        writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
-        max_row = writer.book.active.max_row
-        sheetname = writer.book.active.title
-        df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
-    else:
-        df.to_excel(writer, index=False)       #in case the file does not exists
+    # df = df.applymap(lambda x: x.encode('unicode_escape').
+    #                  decode('utf-8') if isinstance(x, str) else x)             # prevent Illegal character errror
     try:
-        writer.save()
-    except OSError:
-        print("File is open: or permission denied")
+        writer = pd.ExcelWriter(filepath, engine='openpyxl')
+        if os.path.isfile(filepath):
+            writer.book = load_workbook(filepath)
+            writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+            max_row = writer.book.active.max_row
+            sheetname = writer.book.active.title
+            df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
+        else:
+            df.to_excel(writer, index=False)       #in case the file does not exists
+        try:
+            writer.save()
+        except OSError:
+            print("File is open: or permission denied")
+    except IllegalCharacterError:
+        print(df)
+        print("Illegal character error")
+
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info

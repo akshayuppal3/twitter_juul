@@ -94,22 +94,23 @@ class twitter_following():
     # return None
     # get the detailed following data for the users and write to excel
     def get_detail_friends_data(self,df,output_path):
-        with tqdm(total=(len(list(df.iterrows())))) as pbar:
-            for index,row in tqdm(df.iterrows()):
-                pbar.update(1)                                     # handling tqdm for pandas
-                parent_id = row['userID']
-                friends_data = ast.literal_eval(row['following'])   # as data as interpreted as string instead of list
-                if len(friends_data) > 100:       # as api.lookup users take data in batch of 100
-                    batch_size = int(math.ceil(len(friends_data) / 100))
-                    for i in tqdm(range(batch_size)):
-                        dfBat = friends_data[(100 * i): (100 * (i + 1))]
-                        friends_detailed = self.getFriendBatch(dfBat, parent_id)
+        if df is not None:
+            with tqdm(total=(len(list(df.iterrows())))) as pbar:
+                for index,row in tqdm(df.iterrows()):
+                    pbar.update(1)                                                # handling tqdm for pandas
+                    parent_id = row['userID']
+                    friends_data = ast.literal_eval(row['following'])             # as data as interpreted as string instead of list
+                    if len(friends_data) > 100:                                    # as api.lookup users take data in batch of 100
+                        batch_size = int(math.ceil(len(friends_data) / 100))
+                        for i in tqdm(range(batch_size)):
+                            dfBat = friends_data[(100 * i): (100 * (i + 1))]
+                            friends_detailed = self.getFriendBatch(dfBat, parent_id)
+                            if friends_detailed is not None:
+                                util.df_write_excel(friends_detailed,output_path)   # write the data to excel file
+                    else:
+                        friends_detailed = self.getFriendBatch(friends_data, parent_id)
                         if friends_detailed is not None:
-                            util.df_write_excel(friends_detailed,output_path)   # write the data to excel file
-                else:
-                    friends_detailed = self.getFriendBatch(friends_data, parent_id)
-                    if friends_detailed is not None:
-                        util.df_write_excel(friends_detailed,output_path)
+                            util.df_write_excel(friends_detailed,output_path)
 
 
 if __name__ == '__main__':
@@ -136,8 +137,9 @@ if __name__ == '__main__':
         filename_output = args['outputFile2']
         filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
         df = util.read_excel(filename_input)
-        ob.get_detail_friends_data(df,filename_output)
-        logging.info("File creation of detailed user completed")
+        if (df is not None):
+            ob.get_detail_friends_data(df,filename_output)
+            logging.info("File creation of detailed user completed")
 
 
 
