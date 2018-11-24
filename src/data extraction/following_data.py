@@ -84,13 +84,11 @@ class twitter_following():
         except tweepy.TweepError as e:
             print(e.reason)
             logging.error("[Error] " + e.reason)
-            time.sleep(60 * 10)
             # self.getFriendBatch(friendIds, parent_id)       # check when connection is getting lost
 
         except:
             print("connection timeout")
             logging.error("[lookup users] Some error in api or connection")
-            time.sleep(60 * 10)
             # self.getFriendBatch(friendIds, parent_id)       # check when connection is getting lost
 
     # return None
