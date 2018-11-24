@@ -107,6 +107,8 @@ def read_excel(path):
 # Convert df to excel
 # appends to the excel file path specified(or create a nex file with that name)
 def df_write_excel(df,filepath):
+    df = df.applymap(lambda x: x.encode('unicode_escape').
+                     decode('utf-8') if isinstance(x, str) else x)             # prevent Illegal character errror
     writer = pd.ExcelWriter(filepath, engine='openpyxl')
     if os.path.isfile(filepath):
         writer.book = load_workbook(filepath)
