@@ -130,6 +130,8 @@ if __name__ == '__main__':
         ob.getFriendsData(df,filename_output)
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
+        logging.info('[NEW] ---------------------------------------------')
+        logging.info('getting detailed following list for users')
         filename_input = args['inputFile2']
         filename_output = args['outputFile2']
         filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
