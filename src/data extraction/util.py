@@ -98,7 +98,7 @@ def readCSV(path):
 # @return df @param filepath
 def read_excel(path):
     try:
-        df = pd.read_excel(path, 'Sheet1', index_col=None)
+        df = pd.read_excel(path,'Sheet1', index_col=None)
         return df
     except FileNotFoundError:
         print("[ERROR] file not found")
@@ -117,7 +117,16 @@ def df_write_excel(df,filepath):
             writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
             max_row = writer.book.active.max_row
             sheetname = writer.book.active.title
-            df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
+            if len(df > 1):
+                for index,row in df.iterrows():
+                    try:
+                        row.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
+                    except IllegalCharacterError:
+                        print(row)
+                        print("Illegal character error")
+                        continue
+            else:
+                df.to_excel(writer, sheet_name=sheetname, startrow=max_row, index=False, header=False)
         else:
             df.to_excel(writer, index=False)       #in case the file does not exists
         try:
@@ -125,7 +134,6 @@ def df_write_excel(df,filepath):
         except OSError:
             print("File is open: or permission denied")
     except IllegalCharacterError:
-        print(df)
         print("Illegal character error")
 
 
