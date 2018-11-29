@@ -3,6 +3,7 @@
 venv
 .idea
 
+src/data\ extraction/authentication.py
 summary_of_papers
 weekly_reports
 src/.gitignore
@@ -10,7 +11,6 @@ src/CrimsonPosts.py
 output/*
 *.authentication.py
 
-src/data\ extraction/authentication.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
