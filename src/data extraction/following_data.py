@@ -93,7 +93,8 @@ class twitter_following():
 
     # return None
     # get the detailed following data for the users and write to excel
-    def get_detail_friends_data(self,df,output_path):
+    def get_detail_friends_data(self,df):
+        data = pd.DataFrame([])
         if df is not None:
             with tqdm(total=(len(list(df.iterrows())))) as pbar:
                 for index,row in (df.iterrows()):
@@ -106,11 +107,14 @@ class twitter_following():
                             dfBat = friends_data[(100 * i): (100 * (i + 1))]
                             friends_detailed = self.getFriendBatch(dfBat, parent_id)
                             if friends_detailed is not None:
-                                util.df_write_excel(friends_detailed,output_path)   # write the data to excel file
+                                data = data.append(friends_detailed,ignore_index=False)
+                                # util.df_write_excel(friends_detailed,output_path)   # write the data to excel file
                     else:
                         friends_detailed = self.getFriendBatch(friends_data, parent_id)
                         if friends_detailed is not None:
-                            util.df_write_excel(friends_detailed,output_path)
+                            data = data.append(friends_detailed, ignore_index=False)
+                            # util.df_write_excel(friends_detailed,output_path)
+                return data
 
 
 if __name__ == '__main__':
@@ -126,7 +130,7 @@ if __name__ == '__main__':
         logging.info('new extraction process started')
         filename_input = args['inputFile']
         filename_output = args['outputFile']
-        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx ')
         df = util.readCSV(filename_input)
         ob.getFriendsData(df,filename_output)
         logging.info("File creation of basic user and following completed")
@@ -135,10 +139,11 @@ if __name__ == '__main__':
         logging.info('getting detailed following list for users')
         filename_input = args['inputFile2']
         filename_output = args['outputFile2']
-        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        filename_output = os.path.join(util.inputdir,filename_output+'.csv')
         df = util.read_excel(filename_input)
         if (df is not None):
-            ob.get_detail_friends_data(df,filename_output)
+            data = ob.get_detail_friends_data(df)
+            util.output_to_csv(data,filename_output)
             logging.info("File creation of detailed user completed")
 
 
