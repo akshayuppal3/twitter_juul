@@ -6,6 +6,7 @@
 
 from authentication import Authenticate
 from tweepy import OAuthHandler
+import numpy as np
 import pandas as pd
 import util
 import argparse
@@ -16,6 +17,7 @@ from tqdm import tqdm
 import ast
 import time
 import math
+
 
 logging.basicConfig(level="INFO", format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
@@ -52,7 +54,7 @@ class twitter_following():
                 for index,user in enumerate(tqdm(users)):
                     try:
                         friendList = self.api.friends_ids(user,
-                                                          count=util.friendLimit)  # returns list of friends
+                                                          count=util.friendLimit)  # @API returns list of friends
                         df = pd.DataFrame({'userID':user,
                                            'following':[friendList]}, index=[0])
                         util.df_write_excel(df,output_path)
@@ -116,14 +118,41 @@ class twitter_following():
                             # util.df_write_excel(friends_detailed,output_path)
                 return data
 
+    ## @param usersIDs @return adjacency matrix (2d array)
+    def get_friendships(self,userIDs):
+        adjacency_matrix = np.empty((0, len(userIDs)))
+
+        for friend in tqdm(userIDs):
+            a = list()
+            for neighbor in tqdm(userIDs):
+                if (friend == neighbor):
+                    a.append(0)
+                    continue
+                try:
+                    status = api.show_friendship(source_id=friend, target_id=neighbor)
+                    print(status)
+                except tweepy.TweepError as e:
+                    print(e.reason)
+                    continue
+                if (status[0].following is True):
+                    a.append(1)
+                elif (status[0].following is False):
+                    a.append(0)
+            adjacency_matrix = np.vstack((adjacency_matrix, a))
+        return adjacency_matrix
 
 if __name__ == '__main__':
     ob = twitter_following()
     parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
     parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
+    parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',
+                        required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
     parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
+    parser.add_argument('-o3', '--outputFile3', help='Specify the output file for adjacency matrix of users',
+                        default='pairwise_matrix2')
+
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
@@ -146,7 +175,22 @@ if __name__ == '__main__':
             util.output_to_csv(data,filename_output)
             logging.info("File creation of detailed user completed")
 
-
-
+    # for reading the friendship IDS
+    if (args['inputFile3']):
+        logging.info('[NEW] ---------------------------------------------')
+        logging.info('getting detailed following list for users')
+        filename_input = args['inputFile3']
+        filename_output = args['outputFile3']
+        filename_output = os.path.join(util.inputdir, filename_output + '.csv')
+        dtypes = {'userID': 'int', 'following': 'str'}
+        df = pd.read_csv('final_following_data.csv', dtype=dtypes)
+        if df is not None:
+            ## getting the list of userIDs
+            if 'userID' in df:
+                userIDs = list(df.userID)
+                pairwise_adjacency_matrix = ob.get_friendships(df)
+                columns = userIDs
+                df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
+                util.output_to_csv(df,filename_output)
 
 
