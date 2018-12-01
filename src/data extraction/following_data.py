@@ -129,6 +129,7 @@ class twitter_following():
                     a.append(0)
                     continue
                 try:
+                    print(friend,neighbor)
                     status = self.api.show_friendship(source_id=friend, target_id=neighbor)
                     print(status)
                 except tweepy.TweepError as e:
