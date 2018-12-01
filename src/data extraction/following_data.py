@@ -151,7 +151,7 @@ if __name__ == '__main__':
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
     parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
     parser.add_argument('-o3', '--outputFile3', help='Specify the output file for adjacency matrix of users',
-                        default='pairwise_matrix2')
+                        default='pairwise_matrix')
 
     args = vars(parser.parse_args())
     if (args['inputFile']):
@@ -183,7 +183,7 @@ if __name__ == '__main__':
         filename_output = args['outputFile3']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         dtypes = {'userID': 'int', 'following': 'str'}
-        df = pd.read_csv('final_following_data.csv', dtype=dtypes)
+        df = pd.read_csv(filename_input, dtype=dtypes)
         if df is not None:
             ## getting the list of userIDs
             if 'userID' in df:
