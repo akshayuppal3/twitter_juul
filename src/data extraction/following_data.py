@@ -194,6 +194,6 @@ if __name__ == '__main__':
                 pairwise_adjacency_matrix = ob.get_friendships(userIDs)
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
-                util.output_to_csv(df,filename_output)
+                df.to_csv(filename_output)
 
 
