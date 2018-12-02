@@ -183,7 +183,10 @@ if __name__ == '__main__':
         filename_input = args['inputFile3']
         filename_output = args['outputFile3']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
-        df = util.read_excel(filename_input)
+        if filename_input.endswith('.xlsx'):
+            df = util.read_excel(filename_input)
+        elif filename_input.endswith('.csv'):
+            df = util.readCSV(filename_input)
         if df is not None:
             ## getting the list of userIDs
             if 'userID' in df:
