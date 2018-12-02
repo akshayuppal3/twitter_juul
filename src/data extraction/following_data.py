@@ -188,7 +188,7 @@ if __name__ == '__main__':
             ## getting the list of userIDs
             if 'userID' in df:
                 userIDs = list(df.userID)
-                pairwise_adjacency_matrix = ob.get_friendships(df)
+                pairwise_adjacency_matrix = ob.get_friendships(userIDs)
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
                 util.output_to_csv(df,filename_output)
