@@ -178,10 +178,10 @@ if __name__ == '__main__':
     # for reading the friendship IDS
     if (args['inputFile3']):
         logging.info('[NEW] ---------------------------------------------')
-        logging.info('getting detailed following list for users')
         filename_input = args['inputFile3']
         filename_output = args['outputFile3']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
+        logging.info('getting pairwise matrix for the users')
         if filename_input.endswith('.xlsx'):
             df = util.read_excel(filename_input)
         elif filename_input.endswith('.csv'):
@@ -194,5 +194,7 @@ if __name__ == '__main__':
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
                 df.to_csv(filename_output)
+                print(filename_output,"created successfully")
+                logging.info("File creation of detailed user completed")
 
 
