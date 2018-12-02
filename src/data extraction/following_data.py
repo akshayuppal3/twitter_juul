@@ -129,6 +129,7 @@ class twitter_following():
                     a.append(0)
                     continue
                 try:
+                    print(friend,neighbor)
                     status = self.api.show_friendship(source_id=friend, target_id=neighbor)
                     print(status)
                 except tweepy.TweepError as e:
@@ -182,8 +183,7 @@ if __name__ == '__main__':
         filename_input = args['inputFile3']
         filename_output = args['outputFile3']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
-        dtypes = {'userID': 'int', 'following': 'str'}
-        df = pd.read_csv(filename_input, dtype=dtypes)
+        df = util.read_excel(filename_input)
         if df is not None:
             ## getting the list of userIDs
             if 'userID' in df:
