@@ -149,10 +149,6 @@ if __name__ == '__main__':
     parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',
                         required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
-    parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
-    parser.add_argument('-o3', '--outputFile3', help='Specify the output file for adjacency matrix of users',
-                        default='pairwise_matrix')
-
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
@@ -167,7 +163,7 @@ if __name__ == '__main__':
         logging.info('[NEW] ---------------------------------------------')
         logging.info('getting detailed following list for users')
         filename_input = args['inputFile2']
-        filename_output = args['outputFile2']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir,filename_output+'.csv')
         df = util.read_excel(filename_input)
         if (df is not None):
@@ -179,7 +175,7 @@ if __name__ == '__main__':
     if (args['inputFile3']):
         logging.info('[NEW] ---------------------------------------------')
         filename_input = args['inputFile3']
-        filename_output = args['outputFile3']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         logging.info('getting pairwise matrix for the users')
         if filename_input.endswith('.xlsx'):
