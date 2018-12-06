@@ -53,8 +53,7 @@ class twitter_following():
             if users:
                 for index,user in enumerate(tqdm(users)):
                     try:
-                        friendList = self.api.friends_ids(user,
-                                                          count=util.friendLimit)  # @API returns list of friends
+                        friendList = self.api.friends_ids(user)  # @API returns list of friends
                         df = pd.DataFrame({'userID':user,
                                            'following':[friendList]}, index=[0])
                         util.df_write_excel(df,output_path)
@@ -149,10 +148,6 @@ if __name__ == '__main__':
     parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',
                         required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
-    parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
-    parser.add_argument('-o3', '--outputFile3', help='Specify the output file for adjacency matrix of users',
-                        default='pairwise_matrix')
-
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
@@ -167,7 +162,7 @@ if __name__ == '__main__':
         logging.info('[NEW] ---------------------------------------------')
         logging.info('getting detailed following list for users')
         filename_input = args['inputFile2']
-        filename_output = args['outputFile2']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir,filename_output+'.csv')
         df = util.read_excel(filename_input)
         if (df is not None):
@@ -179,17 +174,17 @@ if __name__ == '__main__':
     if (args['inputFile3']):
         logging.info('[NEW] ---------------------------------------------')
         filename_input = args['inputFile3']
-        filename_output = args['outputFile3']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         logging.info('getting pairwise matrix for the users')
         if filename_input.endswith('.xlsx'):
             df = util.read_excel(filename_input)
         elif filename_input.endswith('.csv'):
             df = util.readCSV(filename_input)
-        if df is not None:
+        if not df.empty:
             ## getting the list of userIDs
             if 'userID' in df:
-                userIDs = list(df.userID)
+                userIDs = list(df.userID.astype(int))        #treat as int intead of floats
                 pairwise_adjacency_matrix = ob.get_friendships(userIDs)
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
