@@ -53,8 +53,7 @@ class twitter_following():
             if users:
                 for index,user in enumerate(tqdm(users)):
                     try:
-                        friendList = self.api.friends_ids(user,
-                                                          count=util.friendLimit)  # @API returns list of friends
+                        friendList = self.api.friends_ids(user)  # @API returns list of friends
                         df = pd.DataFrame({'userID':user,
                                            'following':[friendList]}, index=[0])
                         util.df_write_excel(df,output_path)
@@ -182,10 +181,10 @@ if __name__ == '__main__':
             df = util.read_excel(filename_input)
         elif filename_input.endswith('.csv'):
             df = util.readCSV(filename_input)
-        if df is not None:
+        if not df.empty:
             ## getting the list of userIDs
             if 'userID' in df:
-                userIDs = list(df.userID)
+                userIDs = list(df.userID.astype(int))        #treat as int intead of floats
                 pairwise_adjacency_matrix = ob.get_friendships(userIDs)
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
