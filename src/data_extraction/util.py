@@ -22,7 +22,7 @@ with open(filepath) as f:
 logdir = os.path.join(path1,data['logdir'])
 twintDir = os.path.join(path1,data['twintdir'])
 inputdir = os.path.join(path1,data['inputdir'])
-format = "%(asctime)-15s      %(message)s"
+format = "%(asctime)s %(levelname)-8s %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
 twintLimit = 1

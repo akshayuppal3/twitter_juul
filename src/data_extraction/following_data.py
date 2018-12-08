@@ -18,9 +18,7 @@ import ast
 import time
 import math
 
-
-logging.basicConfig(level="INFO", format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
-
+logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
 ## just passing the file and it would extract the following data
 
@@ -47,8 +45,11 @@ class twitter_following():
     # @param df, filename , testMode(bool)
     # @return None
     # writes to an excel file
-    def getFriendsData(self,df,output_path):
+    def getFriendsData(self,df,output_path,index=None):
         users = util.getUsers(df,type= 'ID')
+        if isinstance(index,int):
+            users = users[index:]
+            logging.info("Starting with index %d" % index)
         try:
             if users:
                 for index,user in enumerate(tqdm(users)):
@@ -61,8 +62,6 @@ class twitter_following():
                         logging.error("Some error in connection")
                         time.sleep(60 * 10)
                         continue
-                    finally:
-                        print(index)
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
@@ -145,18 +144,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
     parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
-    parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',
-                        required=False)
+    parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
+    parser.add_argument('-p', '--path', help='Specify the existing path for the file <include extension>')
+    parser.add_argument('-x', '--index', help='Specify the idx for users for following list', default=None)
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
         logging.info('new extraction process started')
         filename_input = args['inputFile']
-        filename_output = args['outputFile']
-        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        if 'path' not in args:
+            filename_output = args['outputFile']
+            filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        else:         # if user specific the output path of an existing file
+            filename_output = args['path']
         df = util.readCSV(filename_input)
-        ob.getFriendsData(df,filename_output)
+        ob.getFriendsData(df,filename_output,int(args['index']))
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
         logging.info('[NEW] ---------------------------------------------')
