@@ -84,7 +84,7 @@ def getUsers(df, type):
 # @return df
 def readCSV(path):
     try:
-        df = pd.read_csv(path, lineterminator='\n', index_col=0)
+        df = pd.read_csv(path, lineterminator='\n', index_col=None)
         if "userName\r" in df:  # windows problem
             df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
             df.rename(columns={'userName\r': "userName"}, inplace=True)
