@@ -1,0 +1,4 @@
+twint
+pandas
+numpy
+tweepy
