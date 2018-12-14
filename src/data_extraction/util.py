@@ -22,7 +22,7 @@ with open(filepath) as f:
 logdir = os.path.join(path1,data['logdir'])
 twintDir = os.path.join(path1,data['twintdir'])
 inputdir = os.path.join(path1,data['inputdir'])
-format = "%(asctime)-15s      %(message)s"
+format = "%(asctime)s %(levelname)-8s %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
 twintLimit = 1
@@ -84,7 +84,7 @@ def getUsers(df, type):
 # @return df
 def readCSV(path):
     try:
-        df = pd.read_csv(path, lineterminator='\n', index_col=0)
+        df = pd.read_csv(path, lineterminator='\n', index_col=None)
         if "userName\r" in df:  # windows problem
             df["userName\r"] = df["userName\r"].str.replace(r'\r', '')
             df.rename(columns={'userName\r': "userName"}, inplace=True)

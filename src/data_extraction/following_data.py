@@ -18,9 +18,7 @@ import ast
 import time
 import math
 
-
-logging.basicConfig(level="INFO", format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
-
+logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
 ## just passing the file and it would extract the following data
 
@@ -47,14 +45,16 @@ class twitter_following():
     # @param df, filename , testMode(bool)
     # @return None
     # writes to an excel file
-    def getFriendsData(self,df,output_path):
+    def getFriendsData(self,df,output_path,index=None):
         users = util.getUsers(df,type= 'ID')
+        if isinstance(index,int):
+            users = users[index:]
+            logging.info("Starting with index %d" % index)
         try:
             if users:
                 for index,user in enumerate(tqdm(users)):
                     try:
-                        friendList = self.api.friends_ids(user,
-                                                          count=util.friendLimit)  # @API returns list of friends
+                        friendList = self.api.friends_ids(user)  # @API returns list of friends
                         df = pd.DataFrame({'userID':user,
                                            'following':[friendList]}, index=[0])
                         util.df_write_excel(df,output_path)
@@ -62,8 +62,6 @@ class twitter_following():
                         logging.error("Some error in connection")
                         time.sleep(60 * 10)
                         continue
-                    finally:
-                        print(index)
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
@@ -146,28 +144,28 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
     parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
-    parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',
-                        required=False)
+    parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
-    parser.add_argument('-o2', '--outputFile2', help='Specify the output file name with following data',default='followingDetailedList')
-    parser.add_argument('-o3', '--outputFile3', help='Specify the output file for adjacency matrix of users',
-                        default='pairwise_matrix')
-
+    parser.add_argument('-p', '--path', help='Specify the existing path for the file <include extension>')
+    parser.add_argument('-x', '--index', help='Specify the idx for users for following list', default=None)
     args = vars(parser.parse_args())
     if (args['inputFile']):
         logging.info('[NEW] ---------------------------------------------')
         logging.info('new extraction process started')
         filename_input = args['inputFile']
-        filename_output = args['outputFile']
-        filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        if 'path' not in args:
+            filename_output = args['outputFile']
+            filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
+        else:         # if user specific the output path of an existing file
+            filename_output = args['path']
         df = util.readCSV(filename_input)
-        ob.getFriendsData(df,filename_output)
+        ob.getFriendsData(df,filename_output,int(args['index']))
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
         logging.info('[NEW] ---------------------------------------------')
         logging.info('getting detailed following list for users')
         filename_input = args['inputFile2']
-        filename_output = args['outputFile2']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir,filename_output+'.csv')
         df = util.read_excel(filename_input)
         if (df is not None):
@@ -179,17 +177,17 @@ if __name__ == '__main__':
     if (args['inputFile3']):
         logging.info('[NEW] ---------------------------------------------')
         filename_input = args['inputFile3']
-        filename_output = args['outputFile3']
+        filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         logging.info('getting pairwise matrix for the users')
         if filename_input.endswith('.xlsx'):
             df = util.read_excel(filename_input)
         elif filename_input.endswith('.csv'):
             df = util.readCSV(filename_input)
-        if df is not None:
+        if not df.empty:
             ## getting the list of userIDs
             if 'userID' in df:
-                userIDs = list(df.userID)
+                userIDs = list(df.userID.astype(int))        #treat as int intead of floats
                 pairwise_adjacency_matrix = ob.get_friendships(userIDs)
                 columns = userIDs
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
