@@ -17,6 +17,8 @@ from tqdm import tqdm
 import ast
 import time
 import math
+from pandas import ExcelWriter
+from openpyxl import load_workbook
 
 logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
@@ -47,21 +49,29 @@ class twitter_following():
     # writes to an excel file
     def getFriendsData(self,df,output_path,index=None):
         users = util.getUsers(df,type= 'ID')
+        writer = ExcelWriter(output_path, engine='openpyxl')
+        book = load_workbook(output_path)
+        writer.book = book
+        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
         if isinstance(index,int):
             users = users[index:]
             logging.info("Starting with index %d" % index)
         try:
             if users:
+                df = pd.DataFrame()
                 for index,user in enumerate(tqdm(users)):
                     try:
                         friendList = self.api.friends_ids(user)  # @API returns list of friends
-                        df = pd.DataFrame({'userID':user,
-                                           'following':[friendList]}, index=[0])
-                        util.df_write_excel(df,output_path)
+                        temp = pd.DataFrame(
+                            {'userID':user,
+                             'following':[friendList]},
+                             index=[0])
+                        df = df.append(temp)
+                        df.to_excel(writer, "Main", cols=['userID', 'following'])
                     except:
                         logging.error("Some error in connection")
-                        time.sleep(60 * 10)
                         continue
+                return df
 
         except tweepy.TweepError as e:          # except for handling tweepy api call
             print("[Error] " + e.reason)
@@ -153,13 +163,15 @@ if __name__ == '__main__':
         logging.info('[NEW] ---------------------------------------------')
         logging.info('new extraction process started')
         filename_input = args['inputFile']
-        if 'path' not in args:
-            filename_output = args['outputFile']
-            filename_output = os.path.join(util.inputdir,filename_output+'.xlsx')
-        else:         # if user specific the output path of an existing file
-            filename_output = args['path']
+        filename_output = args['outputFile']
+        if (args['index'] is not None):
+            index = int(args['index'])
+        else:
+            index = None
         df = util.readCSV(filename_input)
-        ob.getFriendsData(df,filename_output,int(args['index']))
+        print(filename_output)
+        df = ob.getFriendsData(df,filename_output,index)
+        util.output_to_csv(df,filename_output)
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
         logging.info('[NEW] ---------------------------------------------')
