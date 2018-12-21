@@ -164,6 +164,7 @@ if __name__ == '__main__':
         logging.info('new extraction process started')
         filename_input = args['inputFile']
         filename_output = args['outputFile']
+        filename_output = os.path.join(util.inputdir, filename_output + '.xlsx')
         if (args['index'] is not None):
             index = int(args['index'])
         else:
@@ -171,6 +172,7 @@ if __name__ == '__main__':
         df = util.readCSV(filename_input)
         print(filename_output)
         df = ob.getFriendsData(df,filename_output,index)
+        filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         util.output_to_csv(df,filename_output)
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
