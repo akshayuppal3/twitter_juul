@@ -1,4 +1,0 @@
-twint
-pandas
-numpy
-tweepy
