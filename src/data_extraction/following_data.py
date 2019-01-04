@@ -19,6 +19,7 @@ import time
 import math
 from pandas import ExcelWriter
 from openpyxl import load_workbook
+from collections import deque
 
 logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
@@ -27,47 +28,37 @@ logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.j
 class twitter_following():
 
     def __init__(self):
-        self.api = self.authorization()
+        self.api_list = self.get_api()
 
     ## currently returning one API
     ## @TODO need to change for multiple API
-    def authorization(self):
+    def get_api(self):
         ob = Authenticate()
-        consumer_key = ob.getConsumerKey()
-        consumer_secret = ob.getConsumerSecret()
-        access_token = ob.getAccessToken()
-        access_secret = ob.getAccessSecret()
-        author = OAuthHandler(consumer_key, consumer_secret)
-        author.set_access_token(access_token, access_secret)
-        # change to accomodate rate limit errors
-        api = tweepy.API(author, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, retry_count=5, retry_delay=5)
-        return (api)
-
+        api_list = ob.api
+        return (api_list)
 
     # @param df, filename , testMode(bool)
     # @return None
     # writes to an excel file
     def getFriendsData(self,df,output_path,index=None):
         users = util.getUsers(df,type= 'ID')
-        writer = ExcelWriter(output_path, engine='openpyxl')
-        book = load_workbook(output_path)
-        writer.book = book
-        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
         if isinstance(index,int):
             users = users[index:]
             logging.info("Starting with index %d" % index)
         try:
             if users:
                 df = pd.DataFrame()
+                apis = deque(self.api_list)
                 for index,user in enumerate(tqdm(users)):
                     try:
-                        friendList = self.api.friends_ids(user)  # @API returns list of friends
+                        apis.rotate(-1)
+                        api = apis[0]
+                        friendList = api.friends_ids(user)  # @API returns list of friends
                         temp = pd.DataFrame(
                             {'userID':user,
-                             'following':[friendList]},
-                             index=[0])
+                             'following':[friendList]})
                         df = df.append(temp)
-                        df.to_excel(writer, "Main", cols=['userID', 'following'])
+                        util.df_write_csv(temp,output_path)
                     except:
                         logging.error("Some error in connection")
                         continue
@@ -79,9 +70,11 @@ class twitter_following():
     # @return DataFrame @ param friends ID and parent ID
     # takes batch of friend ids and returns detailed information of user
     def getFriendBatch(self, friendIds, parent_id):
-        api = self.api
+        apis = deque(self.api_list)
         data = pd.DataFrame([])
         try:
+            apis.rotate(-1)
+            api = apis[0]
             user = api.lookup_users(friendIds, include_entities=True)  # api to look for user (in batch of 100)
             if user:
                 for idx, statusObj in enumerate(user):
@@ -163,16 +156,15 @@ if __name__ == '__main__':
         logging.info('[NEW] ---------------------------------------------')
         logging.info('new extraction process started')
         filename_input = args['inputFile']
-        filename_output = args['outputFile']
-        filename_output = os.path.join(util.inputdir, filename_output + '.xlsx')
+        filename_path = args['outputFile']
+        filename_output = os.path.join(util.inputdir, filename_path + '_trailing'  + '.csv')
         if (args['index'] is not None):
             index = int(args['index'])
         else:
             index = None
         df = util.readCSV(filename_input)
-        print(filename_output)
         df = ob.getFriendsData(df,filename_output,index)
-        filename_output = os.path.join(util.inputdir, filename_output + '.csv')
+        filename_output = os.path.join(util.inputdir, filename_path + '.csv')
         util.output_to_csv(df,filename_output)
         logging.info("File creation of basic user and following completed")
     if (args['inputFile2']):
