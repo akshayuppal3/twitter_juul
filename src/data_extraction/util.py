@@ -13,9 +13,8 @@ import json
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import IllegalCharacterError
 import posixpath
-
 dir_name = os.getcwd()
-path1 = Path(os.getcwd()).parent.parent
+path1 = str(Path(os.getcwd()).parent.parent)
 filepath = posixpath.join(path1, 'config.json')
 with open(filepath) as f:
 	data = json.load(f)
