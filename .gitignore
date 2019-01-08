@@ -11,7 +11,7 @@ weekly_reports
 input/*
 output/*
 *.authentication.py
-
+keys*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
