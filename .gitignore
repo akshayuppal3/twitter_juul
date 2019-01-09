@@ -12,6 +12,7 @@ input/*
 output/*
 *.authentication.py
 keys*
+*.edgelist
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
