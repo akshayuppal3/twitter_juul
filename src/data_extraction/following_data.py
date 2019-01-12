@@ -38,13 +38,11 @@ class twitter_following():
     def getUserTimelineData(self, user,api):
         userData = pd.DataFrame([])
         if user is not None:
-            # removing the count
-            # count = util.testLimit if test_mode == True else util.userTimelineLimit
             try:
-                status = api.user_timeline(user, tweet_mode='extended')
-                for statusObj in status:
-                    data = util.getTweetObject(statusObj)
-                    userData = userData.append(data,ignore_index=True)
+                for status in tweepy.Cursor(api.user_timeline, user_id=user,
+                                            tweet_mode="extended").items():
+                    data = util.getTweetObject(status)
+                    userData = userData.append(data, ignore_index=True)
                 return userData
 
             except tweepy.TweepError as e:
