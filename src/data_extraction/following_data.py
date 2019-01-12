@@ -30,12 +30,36 @@ class twitter_following():
     def __init__(self):
         self.api_list = self.get_api()
 
-    ## currently returning one API
-    ## @TODO need to change for multiple API
     def get_api(self):
         ob = Authenticate()
         api_list = ob.api
         return (api_list)
+
+    def getUserTimelineData(self, user,api):
+        userData = pd.DataFrame([])
+        if user is not None:
+            # removing the count
+            # count = util.testLimit if test_mode == True else util.userTimelineLimit
+            try:
+                status = api.user_timeline(user, tweet_mode='extended')
+                for statusObj in status:
+                    data = util.getTweetObject(statusObj)
+                    userData = userData.append(data)
+                return userData
+
+            except tweepy.TweepError as e:
+                logging.error("[Error] " + e.reason)
+
+    def getuserTimeline(self, users):
+        apis = deque(self.api_list)
+        finalData = pd.DataFrame([])
+        unique_users = set(users)
+        for user in tqdm(unique_users):
+            apis.rotate(-1)
+            api = apis[0]
+            userData = self.getUserTimelineData(user,api)
+            finalData = finalData.append(userData)
+        return finalData
 
     # @param df, filename , testMode(bool)
     # @return None
@@ -78,7 +102,7 @@ class twitter_following():
             user = api.lookup_users(friendIds, include_entities=True)  # api to look for user (in batch of 100)
             if user:
                 for idx, statusObj in enumerate(user):
-                    userData = util.getTweetObject(tweetObj=statusObj, parentID=parent_id)
+                    userData = util.getTweetObject(tweetObj=statusObj)
                     data = data.append(userData, ignore_index=True)
                 return data
             else:
@@ -148,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
     parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
     parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',required=False)
+    parser.add_argument('-i4', '--inputFiles4', help= 'Specify the input file for users for their timeline data',required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
     parser.add_argument('-p', '--path', help='Specify the existing path for the file <include extension>')
     parser.add_argument('-x', '--index', help='Specify the idx for users for following list', default=None)
@@ -178,7 +203,6 @@ if __name__ == '__main__':
             data = ob.get_detail_friends_data(df)
             util.output_to_csv(data,filename_output)
             logging.info("File creation of detailed user completed")
-
     # for reading the friendship IDS
     if (args['inputFile3']):
         logging.info('[NEW] ---------------------------------------------')
@@ -199,6 +223,24 @@ if __name__ == '__main__':
                 df = pd.DataFrame(pairwise_adjacency_matrix, columns=columns, index=columns)
                 df.to_csv(filename_output)
                 print(filename_output,"created successfully")
+                logging.info("File creation of detailed user completed")
+    if (args['inputFile4']):
+        logging.info('[NEW] ---------------------------------------------')
+        filename_input = args['inputFile3']
+        filename_output = args['outputFile']
+        filename_output = os.path.join(util.inputdir, filename_output + '.csv')
+        logging.info('getting pairwise matrix for the users')
+        if filename_input.endswith('.xlsx'):
+            df = util.read_excel(filename_input)
+        elif filename_input.endswith('.csv'):
+            df = util.readCSV(filename_input)
+        if not df.empty:
+            ## getting the list of userIDs
+            if 'userID' in df:
+                userIDs = list(df.userID.astype(int))        #treat as int intead of floats
+                df = ob.getuserTimeline(userIDs)
+                df.to_csv(filename_output)
+                print(filename_output, "created successfully")
                 logging.info("File creation of detailed user completed")
 
 

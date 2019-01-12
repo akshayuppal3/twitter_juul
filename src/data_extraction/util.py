@@ -149,33 +149,78 @@ def df_write_csv(df, filepath):
 	except IllegalCharacterError:
 		print("Illegal character error")
 
+def getHashtags(tweetObj, extended=False):
+	if extended == True:
+		if 'retweeted_status' in tweetObj._json.keys():
+			if len(tweetObj.retweeted_status.entities['hashtags']) != 0:
+				hashtags = [i['text'] for i in tweetObj.retweeted_status.entities['hashtags']]
+			else:
+				hashtags = None
+		else:
+			hashtags = self.getHashtags(tweetObj,extended=False)
+	else:
+		if len(tweetObj.entities['hashtags']) != 0:
+			hashtags = [j['text'] for j in tweetObj.entities['hashtags']]
+		else:
+			hashtags = "None"
+	return hashtags
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info
-def getTweetObject(tweetObj, parentID):
-	data = pd.DataFrame.from_records(
-		[{
-			'userID': tweetObj.id,
-			'parentID': parentID,
-			'userName': tweetObj.name,
-			'userDescription': tweetObj.description,
-			'userCreatedAt': tweetObj.created_at,
-			'userLocation': tweetObj.location,
-			'favourites_count': tweetObj.favourites_count,
-			'friendsCount': tweetObj.friends_count,
-			'userFollowersCount': tweetObj.followers_count,
-			'listedCount': tweetObj.listed_count,
-			'lang': tweetObj.lang,
-			'url': tweetObj.url,
-			'imageurl': tweetObj.profile_image_url,
-			'userVerified': tweetObj.verified,
-			'isProtected': tweetObj.protected,
-			'notifications': tweetObj.notifications,
-			'statusesCount': tweetObj.statuses_count,
-			'geoEnabled': tweetObj.geo_enabled,
-			'contributorEnabled': tweetObj.contributors_enabled,
-			# 'status': tweetObj.status,
-			'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
-			'withheldScope': tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
-		}], index=[0])
+def getTweetObject(tweetObj, parentID=None):
+	if parentID is not None:
+		data = pd.DataFrame.from_records(
+			[{
+				'userID': tweetObj.id,
+				'parentID': parentID,
+				'userName': tweetObj.name,
+				'userDescription': tweetObj.description,
+				'userCreatedAt': tweetObj.created_at,
+				'userLocation': tweetObj.location,
+				'favourites_count': tweetObj.favourites_count,
+				'friendsCount': tweetObj.friends_count,
+				'userFollowersCount': tweetObj.followers_count,
+				'listedCount': tweetObj.listed_count,
+				'lang': tweetObj.lang,
+				'url': tweetObj.url,
+				'imageurl': tweetObj.profile_image_url,
+				'userVerified': tweetObj.verified,
+				'isProtected': tweetObj.protected,
+				'notifications': tweetObj.notifications,
+				'statusesCount': tweetObj.statuses_count,
+				'geoEnabled': tweetObj.geo_enabled,
+				'contributorEnabled': tweetObj.contributors_enabled,
+				# 'status': tweetObj.status,
+				'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
+				'withheldScope': tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
+			}], index=[0])
+	else:
+		if 'retweeted_status' in tweetObj._json.keys():
+			text = tweetObj.retweeted_status.full_text.replace("\n", " ")
+			hashtags = getHashtags(tweetObj, extended=True)  # for retweeted status
+			retweeted = True
+		else:
+			text = tweetObj.full_text.replace("\n", " ")
+			hashtags = getHashtags(tweetObj)
+			retweeted = False
+		data = pd.DataFrame.from_records(
+			[{
+				'tweetId': tweetObj.id_str,
+				'tweetText': text,
+				'retweetCount': tweetObj.retweet_count,
+				'retweeted': retweeted,
+				'tweetCreatedAt': tweetObj.created_at,
+				'userName': tweetObj.user.name,
+				'userID': tweetObj.user.id,
+				'userCreatedAt': tweetObj.user.created_at,
+				'userLocation': tweetObj.user.location,
+				'userDescription': tweetObj.user.description.replace("\n", " "),
+				'friendsCount': tweetObj.user.friends_count,
+				'followersCount': tweetObj.user.followers_count,
+				'listedCount': tweetObj.listed_count,
+				'lang': tweetObj.lang,
+				'hashtags': hashtags,
+				'url': tweetObj.url,
+				'imageurl': tweetObj.user.profile_image_url,
+			}], index=[0])
 	return (data)
