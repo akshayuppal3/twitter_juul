@@ -6,3 +6,4 @@ git+https://github.com/lwahedi/tweepy.git@master
 tqdm
 openpyxl
 xlrd
+python-git

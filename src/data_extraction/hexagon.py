@@ -212,9 +212,10 @@ class Hexagon:
 		ob = Twitter()
 		userData = pd.DataFrame([])
 		if user is not None:
-			count = util.testLimit if test_mode == True else util.userTimelineLimit
+			# removing the count
+			# count = util.testLimit if test_mode == True else util.userTimelineLimit
 			try:
-				status = self.api.user_timeline(user,count = count, tweet_mode = 'extended')
+				status = self.api.user_timeline(user, tweet_mode = 'extended')
 				for statusObj in status:
 					data = ob.getTweetObject(statusObj,test_mode=test_mode)
 					userData = userData.append(data)
