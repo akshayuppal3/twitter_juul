@@ -196,17 +196,20 @@ def getTweetObject(tweetObj, parentID=None):
 			}], index=[0])
 	else:
 		if 'retweeted_status' in tweetObj._json.keys():
-			text = tweetObj.retweeted_status.full_text.replace("\n", " ")
+			retweetText = tweetObj.retweeted_status.full_text.replace("\n", " ")
+			text = tweetObj.full_text.replace("\n", " ")
 			hashtags = getHashtags(tweetObj, extended=True)  # for retweeted status
 			retweeted = True
 		else:
 			text = tweetObj.full_text.replace("\n", " ")
+			retweetText = None
 			hashtags = getHashtags(tweetObj)
 			retweeted = False
 		data = pd.DataFrame.from_records(
 			[{
 				'tweetId': tweetObj.id_str,
 				'tweetText': text,
+				'retweetText': retweetText,
 				'retweetCount': tweetObj.retweet_count,
 				'retweeted': retweeted,
 				'tweetCreatedAt': tweetObj.created_at,
