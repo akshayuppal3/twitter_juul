@@ -44,7 +44,7 @@ class twitter_following():
                 status = api.user_timeline(user, tweet_mode='extended')
                 for statusObj in status:
                     data = util.getTweetObject(statusObj)
-                    userData = userData.append(data)
+                    userData = userData.append(data,ignore_index=True)
                 return userData
 
             except tweepy.TweepError as e:
@@ -58,7 +58,7 @@ class twitter_following():
             apis.rotate(-1)
             api = apis[0]
             userData = self.getUserTimelineData(user,api)
-            finalData = finalData.append(userData)
+            finalData = finalData.append(userData,ignore_index=True)
         return finalData
 
     # @param df, filename , testMode(bool)
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--inputFile', help='Specify the input file path for extracting friends', required=False)
     parser.add_argument('-i2', '--inputFile2', help='Specify the input file path with user and friends id', required=False)
     parser.add_argument('-i3', '--inputFile3', help='Specify the input file path with user and friends id',required=False)
-    parser.add_argument('-i4', '--inputFiles4', help= 'Specify the input file for users for their timeline data',required=False)
+    parser.add_argument('-i4', '--inputFile4', help= 'Specify the input file for users for their timeline data',required=False)
     parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
     parser.add_argument('-p', '--path', help='Specify the existing path for the file <include extension>')
     parser.add_argument('-x', '--index', help='Specify the idx for users for following list', default=None)
@@ -226,7 +226,7 @@ if __name__ == '__main__':
                 logging.info("File creation of detailed user completed")
     if (args['inputFile4']):
         logging.info('[NEW] ---------------------------------------------')
-        filename_input = args['inputFile3']
+        filename_input = args['inputFile4']
         filename_output = args['outputFile']
         filename_output = os.path.join(util.inputdir, filename_output + '.csv')
         logging.info('getting pairwise matrix for the users')

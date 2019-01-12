@@ -217,10 +217,10 @@ def getTweetObject(tweetObj, parentID=None):
 				'userDescription': tweetObj.user.description.replace("\n", " "),
 				'friendsCount': tweetObj.user.friends_count,
 				'followersCount': tweetObj.user.followers_count,
-				'listedCount': tweetObj.listed_count,
+				'listedCount': tweetObj.user.listed_count,
 				'lang': tweetObj.lang,
 				'hashtags': hashtags,
-				'url': tweetObj.url,
+				'url': tweetObj.user.url,
 				'imageurl': tweetObj.user.profile_image_url,
 			}], index=[0])
 	return (data)
