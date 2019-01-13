@@ -58,7 +58,7 @@ class twitter_following():
 			apis.rotate(-1)
 			api = apis[0]
 			userData = self.getUserTimelineData(user,api)
-			if ((idx > 0) & (idx % 2 == 0)):  # dump after every 500
+			if ((idx > 0) & (idx % 500 == 0)):  # dump after every 500
 				filename = filename_output+ str(count) + '.csv' + '.pkl'
 				with open(filename,"wb") as f:
 					pickle.dump(finalData,f)
