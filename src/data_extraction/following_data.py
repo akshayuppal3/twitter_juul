@@ -246,6 +246,7 @@ if __name__ == '__main__':
 				if (args['index'] is not None):
 					index = int(args['index'])
 					logging.info("Starting with index %d" % index)
+					print("Starting with index %d" % index)
 					userIDs = list(df[index:].userID.astype(int))
 				else:
 					userIDs = list(df.userID.astype(int))        #treat as int intead of floats
