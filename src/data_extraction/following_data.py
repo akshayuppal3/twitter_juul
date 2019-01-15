@@ -243,7 +243,13 @@ if __name__ == '__main__':
 		if not df.empty:
 			## getting the list of userIDs
 			if 'userID' in df:
-				userIDs = list(df.userID.astype(int))        #treat as int intead of floats
+				if (args['index'] is not None):
+					index = int(args['index'])
+					logging.info("Starting with index %d" % index)
+					print("Starting with index %d" % index)
+					userIDs = list(df[index:].userID.astype(int))
+				else:
+					userIDs = list(df.userID.astype(int))        #treat as int intead of floats
 				ob.getuserTimeline(userIDs,filename_output)
 				print(filename_output, "created successfully")
 				logging.info("File creation of detailed user completed")
