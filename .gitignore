@@ -8,8 +8,6 @@ venv
 summary_of_papers
 weekly_reports
 *.gitignore
-input/*
-output/*
 *.authentication.py
 keys*
 *.edgelist
