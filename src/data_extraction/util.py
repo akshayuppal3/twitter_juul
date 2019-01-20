@@ -13,6 +13,9 @@ import json
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import IllegalCharacterError
 import posixpath
+import numpy as np
+import nltk
+import ast
 dir_name = os.getcwd()
 path1 = str(Path(os.getcwd()).parent.parent)
 filepath = posixpath.join(path1, 'config.json')
@@ -149,6 +152,35 @@ def df_write_csv(df, filepath):
 	except IllegalCharacterError:
 		print("Illegal character error")
 
+## @param df  , @return length of hashtags
+def hashtag_count(df):
+	if df is not np.nan:
+		hashtags = ast.literal_eval(df)
+		if (hashtags is not None):
+			return (len(hashtags))
+		else:
+			return (0)
+	else:
+		return (0)
+
+## return tokenize sentences
+# @param df, columns
+# @returns sentences
+def get_sentences(df, column):
+	sentences = list(df[column].progress_apply(get_tokenize_words))
+	return (sentences)
+
+
+# function to return tokenize words
+## @param text @return tokenize words
+def get_tokenize_words(text,stopwords):
+	tkz = nltk.tokenize
+	words = tkz.word_tokenize(text)
+	words = [ele for ele in words if ((ele not in stopwords) and len(ele) > 2 and (ele.isalpha()))]
+	words = [word.lower() for word in words]
+	return words
+
+
 def getHashtags(tweetObj, extended=False):
 	if extended == True:
 		if 'retweeted_status' in tweetObj._json.keys():
@@ -157,7 +189,7 @@ def getHashtags(tweetObj, extended=False):
 			else:
 				hashtags = None
 		else:
-			hashtags = self.getHashtags(tweetObj,extended=False)
+			hashtags = getHashtags(tweetObj,extended=False)
 	else:
 		if len(tweetObj.entities['hashtags']) != 0:
 			hashtags = [j['text'] for j in tweetObj.entities['hashtags']]
