@@ -54,27 +54,21 @@ class twitter_following():
 		finalData = pd.DataFrame([])
 		unique_users = set(users)
 		count= 1
-		private_user = list()
 		for idx,user in enumerate(tqdm(unique_users)):
 			apis.rotate(-1)
 			api = apis[0]
-			if ((api.get_user(user)).protected != True):
-				userData = self.getUserTimelineData(user,api)
-				if ((idx > 0) & (idx % 500 == 0)):  # dump after every 500
-					filename = filename_output+ str(count) + '.csv' + '.pkl'
-					with open(filename,"wb") as f:
-						pickle.dump(finalData,f)
-					count += 1
-					finalData = pd.DataFrame([])
-				else:
-					finalData = finalData.append(userData,ignore_index=True)
+			userData = self.getUserTimelineData(user,api)
+			if ((idx > 0) & (idx % 500 == 0)):  # dump after every 500
+				filename = filename_output+ str(count) + '.csv' + '.pkl'
+				with open(filename,"wb") as f:
+					pickle.dump(finalData,f)
+				count += 1
+				finalData = pd.DataFrame([])
 			else:
-				print(user," is private")
-				private_user.append(user)
-				logging.info(user + " private")
-		file = filename_output + "_private_users" + ".pkl"
-		with open(file,"wb") as f:
-			pickle.dump(finalData,f)
+				finalData = finalData.append(userData,ignore_index=True)
+		filename = filename_output + str(count) + '.csv' + '.pkl'
+		with open(filename, "wb") as f:   # last batch
+			pickle.dump(finalData, f)
 
 	# @param df, filename , testMode(bool)
 	# @return None
