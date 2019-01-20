@@ -11,13 +11,13 @@ import pandas as pd
 import git
 class Authenticate:
 
+	def __init__(self):
+		self.api = self.get_api()
+
 	def get_git_root(self,path):
 		git_repo = git.Repo(path, search_parent_directories=True)
 		git_root = git_repo.git.rev_parse("--show-toplevel")
 		return git_root
-
-	def __init__(self):
-		self.api = self.get_api()
 
 	def get_api(self):
 		api_list = list()
