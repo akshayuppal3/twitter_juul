@@ -16,6 +16,8 @@ import posixpath
 import numpy as np
 import nltk
 import ast
+
+## loading the config file
 dir_name = os.getcwd()
 path1 = str(Path(os.getcwd()).parent.parent)
 filepath = posixpath.join(path1, 'config.json')
@@ -24,6 +26,9 @@ with open(filepath) as f:
 logdir = os.path.join(path1, data['logdir'])
 twintDir = os.path.join(path1, data['twintdir'])
 inputdir = os.path.join(path1, data['inputdir'])
+modeldir = os.path.join(path1, data['modeldir'])
+
+## logging informaation
 format = "%(asctime)s %(levelname)-8s %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
@@ -32,7 +37,6 @@ userTimelineLimit = 200  # limit for the no of tweets extracted from user timeli
 friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
-
 
 # @param dataframe and output filename
 def output_to_csv(df, filename):
