@@ -39,6 +39,7 @@ def main():
 			w2v_file = os.path.join(util.modeldir,"w2v.pkl")
 			with open(w2v_file,"wb") as f:
 				pickle.dump(w2v,f)
+			print("dumping the w2v model finished")
 		else:
 			print("specify the input file")
 
