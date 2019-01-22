@@ -27,8 +27,8 @@ class Preprocess:
 					df_new['no_hashtags'] = df['hashtags'].apply(util.hashtag_count)
 				# modifying the text after we got the features
 				tweet_texts = pd.DataFrame(df['tweetText'].str.replace(r'(https?://\S+)', ""))  # urls
-				tweet_texts = pd.DataFrame(df['tweetText'].str.replace(r'(\@\w+)', "author"))  # author mentions
-				tweet_texts = pd.DataFrame(df['tweetText'].str.replace(r'(\#\w+)', ""))  # removing hashtags
+				tweet_texts = pd.DataFrame(tweet_texts['tweetText'].str.replace(r'(\@\w+)', "author"))  # author mentions
+				tweet_texts = pd.DataFrame(tweet_texts['tweetText'].str.replace(r'(\#\w+)', ""))  # removing hashtags
 				df_new['tweetText'] = tweet_texts
 				df_new['no_words'] = df['tweetText'].apply(lambda x: len(x.split(' ')))
 				return (df_new)

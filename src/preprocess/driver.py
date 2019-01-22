@@ -46,8 +46,8 @@ def main():
 		if (os.path.exists(w2v_filename)):  ## check if embedding exists
 			w2v = pickle.load(open(w2v_filename, "rb"))
 			if (w2v):
-				if (os.path.exists(os.path.join(util.modeldir + "df_timeline_lbl.pkl"))):
-					lbl_file_path = os.path.join(util.modeldir + "df_timeline_lbl.pkl")
+				if (os.path.exists(os.path.join(util.modeldir + "df_train_lb.pkl"))):
+					lbl_file_path = os.path.join(util.modeldir + "df_train_lb.pkl")
 					print("loading the labelled file")
 					df_lbl = pickle.load(open(lbl_file_path),"rb")
 					print("\n************")
