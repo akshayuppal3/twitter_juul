@@ -1,68 +1,156 @@
 # check for w2v in models else create and dump
 
-
-from setup import setup_env
 import pickle
-import nltk
 import warnings
 import os
-import util
 import argparse
 import pandas as pd
 from gensim.models import Word2Vec
-from w2v import W2v
 from preprocess import Preprocess
 from sklearn import preprocessing
 from training import training
+import util
 
 # Suppress warning
 def warn(*args, **kwargs):
 	pass
 
+# df_train_lbl is the 500 lablled data
+# df_timeline_lbl is the labelleing of teh entire input file
 
 
 def main():
-	if (os.path.exists(os.path.join(util.modeldir + "df_timeline_lbl.pkl"))):
-		lbl_file_path = os.path.join(util.modeldir + "sentences_timeline.pkl")
-		parser = argparse.ArgumentParser(description="getting the poly and the mono users")
-		parser.add_argument("-i",'--inputFile',help="specify the Dataframe file to get(poly/mono) users",required=True)
-		parser.add_argument("-p","--annotated",help="path of the manually labelled file for tweet classification",default=lbl_file_path)
-		parser.add_argument("-o",'--boolw2v',help="create embeddings from data(yes, no)",default=False,type=util.str2bool)
-		args = vars(parser.parse_args())
-		warnings.warn = warn
-		setup_env()  # download necessary nltk packages
-		stopwords = nltk.corpus.stopwords.words('english')
-		w2v = False
+	warnings.warn = warn
+	parser = argparse.ArgumentParser(description="getting the poly and the mono users")
+	parser.add_argument("-i",'--inputFile',help="specify the Dataframe file to get(poly/mono) users",required=False)
+	parser.add_argument("-f",'--function',help="specify the option as ( w2v / train / predict/ users)", default='train')  # option for train or prediction
+	args = vars(parser.parse_args())
+
+	# creating embeddings from the input file
+	if args['function'] == 'w2v':
 		if (args['inputFile']):
 			filename = args['inputFile']
-			df_timeline = pd.read_csv(filename)  # input data
+			df_input = pd.read_csv(filename)  # input data
 			print("generating sentecnes might take some time (5-10min)")
-			sentences_timeline = util.get_sentences(df_timeline, 'tweetText')
-			if not(args['boolw2v']):
-				w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
-				if (os.path.exists(w2v_filename)):
-					w2v = pickle.load(open(w2v_filename,"rb"))
-				else:
-					print(w2v_filename," does not exist - specify the option as True (it will create the embeddings)")
-			else:
-				model = Word2Vec(sentences_timeline, size=100, min_count=2)
-				w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+			sentences_input = util.get_sentences(df_input, 'tweetText')
+			model = Word2Vec(sentences_input, size=100, min_count=2)
+			w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+			# dump the w2v embeddings
+			w2v_file = os.path.join(util.modeldir,"w2v.pkl")
+			with open(w2v_file,"wb") as f:
+				pickle.dump(w2v,f)
+			print("dumping the w2v model finished")
+		else:
+			print("specify the input file")
 
-			# user the labelled file to get classification accuracy with different models
+	# training the model
+	elif args['function'] == 'train':
+		# user the labelled file to get classification accuracy with different models
+		w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
+		if (os.path.exists(w2v_filename)):  ## check if embedding exists
+			w2v = pickle.load(open(w2v_filename, "rb"))
 			if (w2v):
-				df_lbl = pd.read_csv(lbl_file_path)
-				preproces = Preprocess(w2v,df_lbl)
-				sentences = util.get_sentences(df_lbl, 'tweetText')
-				X = preproces.get_X(sentences)
-				y = list(df_lbl.label)
-				# normalize the features
-				X = preprocessing.normalize(X, norm='l1')
-				y = [int(i) for i in y]
-				train = training(X,y)
-				train.train_baseline()
-				print("taking the best model to predict on the input (df_timeline)")
+				if (os.path.exists(os.path.join(util.modeldir + "df_train_lb.pkl"))):
+					lbl_file_path = os.path.join(util.modeldir + "df_train_lb.pkl")
+					print("loading the labelled file")
+					df_lbl = pickle.load(open(lbl_file_path,"rb"))
+					print("\n************")
+					print(len(df_lbl))   ## delete
+					print(type(df_lbl))
+					sentences = util.get_sentences(df_lbl, 'tweetText')
+					pre = Preprocess(w2v,df_lbl)
+					## getting the features of the labelled data
+					print("getting the features of labelled data")
+					X = pre.get_X(sentences)
+					y = list(df_lbl.label)
+					# normalize the features
+					X = preprocessing.normalize(X, norm='l1')
+					y = [int(i) for i in y]
+					train = training(X,y)
+					best_model = train.train_baseline()   # it returns a tuple (model,name)
+					model = best_model[0]
+					name = best_model[1]
+					train_model_path = os.path.join(util.modeldir,'train_model.pkl')
+					with open(train_model_path,"wb") as f:
+						pickle.dump(model,f)
+					print("taking the " + str(name) + " classifier to predict on the input")
+				else:
+					print("unzip the labelled file or the labelled file does not exist")
+			else:
+				print("w2v embeddings file does not exist")
+
+	# predicting the model
+	elif args['function'] == 'predict':
+		if (args['inputFile']):
+			input_file_path = args['inputFile']
+			df_input = pd.read_csv(input_file_path)
+			w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
+			if (os.path.exists(w2v_filename)):  ## check if embedding exists
+				w2v = pickle.load(open(w2v_filename, "rb"))
+				if (w2v):
+					print("\n************")
+					print(len(df_input))  ## delete
+					pre = Preprocess(w2v, df_input)
+					sentences = util.get_sentences(df_input, 'tweetText')
+					## getting the features of the labelled data
+					print("getting the features of labelled data")
+					X = pre.get_X(sentences)
+					X = preprocessing.normalize(X, norm='l1')
+					# get the model from the previous training process
+					train_model_path = os.path.join(util.modeldir,"train_model.pkl")
+					train_model = pickle.load(open(train_model_path,"rb"))
+					train = training(X)
+					y_pred = train.predict(train_model)
+					## get the no of labelled as 1, 2 and 3
+					print("no of labelled as 3",len(y_pred[y_pred == 3]))
+					print("no of labelled as 2", len(y_pred[y_pred == 2]))
+					print("no of labelled as 1", len(y_pred[y_pred == 1]))
+					df_input['label'] = y_pred
+					# dump the final full labelled dataset
+					input_labelled_path = os.path.join(util.modeldir,"df_timeline_lbl.pkl")
+					with open(input_labelled_path,"wb") as f:
+						pickle.dump(df_input,f)
+					print("labelled data dumped")
+			else:
+				print("w2v embeddings file does not exist")
+		else:
+			print("please specify the input file")
+
+	## extract the poly and mono users
+	elif args['function'] == 'users':
+		# get the labelled file
+		if (os.path.exists(os.path.join(util.modeldir + "df_timeline_lbl.pkl"))):
+			lbl_file_path = os.path.join(util.modeldir + "df_timeline_lbl.pkl")
+			df_input = pickle.load(open(lbl_file_path, "rb"))
+			# open the weed list
+			weed_words = pickle.load(open(os.path.join(util.modeldir,"weed_words.pkl"),"rb"))
+			weed_words = [(" " + word + " ") for word in weed_words]
+			pattern = "|".join(weed_words)
+			print("extracting the pattern")
+			df_tweet_weeds = df_input[df_input['tweetText'].str.contains(pattern, case=False)]
+			index = df_tweet_weeds.index   # the file after filtering have the index contained within
+			df_weeds = df_input.loc[index]
+			poly_users = list(set(list(df_weeds.loc[df_weeds.label == 3]['userID'])))
+			total_users = list(df_input.userID.unique())
+			poly_length = len(poly_users)
+			total_users_length = len(total_users)
+			mono_length = total_users_length - poly_length
+			print("total users = ", total_users_length)
+			print("no of poly users = ",poly_length)
+			print("no of mono users = ", mono_length)
+			print("% of poly users is ", poly_length / total_users_length )
+			print("% of mono users is ", mono_length/ total_users_length )
+
+			# classify the poly further as poly-1(have used drug before), 2 (have used after) ,3 (have used at both times)
+
+		else:
+			print("unzip the labelled file or the file does not exist")
 
 
+# labelled file does not exist
 
+
+if __name__ == '__main__':
+	main()
 
 

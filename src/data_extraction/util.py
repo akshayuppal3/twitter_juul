@@ -16,6 +16,12 @@ import posixpath
 import numpy as np
 import nltk
 import ast
+<<<<<<< HEAD
+from setup import setup_env
+from tqdm import tqdm
+tqdm.pandas()
+=======
+>>>>>>> 52773fe455ca0d827dfec33374163f16ca67f924
 
 ## loading the config file
 dir_name = os.getcwd()
@@ -38,6 +44,13 @@ friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
 
+<<<<<<< HEAD
+setup_env()  # download necessary nltk packages
+stopwords = nltk.corpus.stopwords.words('english')
+
+
+=======
+>>>>>>> 52773fe455ca0d827dfec33374163f16ca67f924
 # @param dataframe and output filename
 def output_to_csv(df, filename):
 	if (df is not None and not df.empty):
@@ -48,13 +61,12 @@ def output_to_csv(df, filename):
 
 # conversion of str to bool
 def str2bool(v):
-	if v.lower() in ('yes', 'true', 't', 'y', '1'):
+	if v.lower() in ('train', 't', 't', 'y', '1'):
 		return True
 	elif v.lower() in ('no', 'false', 'f', 'n', '0'):
 		return False
 	else:
 		raise argparse.ArgumentTypeError('Boolean value expected.')
-
 
 # @Deprecated
 # handle the rate limit (wait for 15min (API constarints))
@@ -171,13 +183,13 @@ def hashtag_count(df):
 # @param df, columns
 # @returns sentences
 def get_sentences(df, column):
-	sentences = list(df[column].progress_apply(get_tokenize_words))
+	sentences = list(df[column].apply(get_tokenize_words))
 	return (sentences)
 
 
 # function to return tokenize words
 ## @param text @return tokenize words
-def get_tokenize_words(text,stopwords):
+def get_tokenize_words(text):
 	tkz = nltk.tokenize
 	words = tkz.word_tokenize(text)
 	words = [ele for ele in words if ((ele not in stopwords) and len(ele) > 2 and (ele.isalpha()))]
