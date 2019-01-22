@@ -16,12 +16,9 @@ import posixpath
 import numpy as np
 import nltk
 import ast
-<<<<<<< HEAD
 from setup import setup_env
 from tqdm import tqdm
 tqdm.pandas()
-=======
->>>>>>> 52773fe455ca0d827dfec33374163f16ca67f924
 
 ## loading the config file
 dir_name = os.getcwd()
@@ -44,13 +41,10 @@ friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
 
-<<<<<<< HEAD
 setup_env()  # download necessary nltk packages
 stopwords = nltk.corpus.stopwords.words('english')
 
 
-=======
->>>>>>> 52773fe455ca0d827dfec33374163f16ca67f924
 # @param dataframe and output filename
 def output_to_csv(df, filename):
 	if (df is not None and not df.empty):
