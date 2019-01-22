@@ -1,21 +1,7 @@
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score
-from sklearn import preprocessing
-from sklearn import svm
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import BernoulliNB
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import BernoulliNB
-from sklearn.ensemble import BaggingClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.ensemble import VotingClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.naive_bayes import GaussianNB
 # grid search
@@ -59,8 +45,13 @@ def classification(Y_dev, Y_pred):
 
 
 def prediction_models(models, X, Y_test):
+	best_score = 0
+	best_model = None
 	for name, model in models.items():
 		Y_pred = model.predict(X)
 		score = accuracy_score(Y_test, Y_pred)
 		print("accuarcy ", name, ":", score)
 		classification(Y_test, Y_pred)
+		if (score > best_score):
+			best_model = (model,name)       # get the best model
+	return best_model

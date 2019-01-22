@@ -16,9 +16,6 @@ import posixpath
 import numpy as np
 import nltk
 import ast
-from setup import setup_env
-from tqdm import tqdm
-tqdm.pandas()
 
 ## loading the config file
 dir_name = os.getcwd()
@@ -41,10 +38,6 @@ friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
 
-setup_env()  # download necessary nltk packages
-stopwords = nltk.corpus.stopwords.words('english')
-
-
 # @param dataframe and output filename
 def output_to_csv(df, filename):
 	if (df is not None and not df.empty):
@@ -55,12 +48,13 @@ def output_to_csv(df, filename):
 
 # conversion of str to bool
 def str2bool(v):
-	if v.lower() in ('train', 't', 't', 'y', '1'):
+	if v.lower() in ('yes', 'true', 't', 'y', '1'):
 		return True
 	elif v.lower() in ('no', 'false', 'f', 'n', '0'):
 		return False
 	else:
 		raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 # @Deprecated
 # handle the rate limit (wait for 15min (API constarints))
@@ -183,7 +177,7 @@ def get_sentences(df, column):
 
 # function to return tokenize words
 ## @param text @return tokenize words
-def get_tokenize_words(text):
+def get_tokenize_words(text,stopwords):
 	tkz = nltk.tokenize
 	words = tkz.word_tokenize(text)
 	words = [ele for ele in words if ((ele not in stopwords) and len(ele) > 2 and (ele.isalpha()))]
