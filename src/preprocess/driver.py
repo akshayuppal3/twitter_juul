@@ -49,11 +49,12 @@ def main():
 				if (os.path.exists(os.path.join(util.modeldir + "df_train_lb.pkl"))):
 					lbl_file_path = os.path.join(util.modeldir + "df_train_lb.pkl")
 					print("loading the labelled file")
-					df_lbl = pickle.load(open(lbl_file_path),"rb")
+					df_lbl = pickle.load(open(lbl_file_path,"rb"))
 					print("\n************")
 					print(len(df_lbl))   ## delete
-					pre = Preprocess(w2v,df_lbl)
+					print(type(df_lbl))
 					sentences = util.get_sentences(df_lbl, 'tweetText')
+					pre = Preprocess(w2v,df_lbl)
 					## getting the features of the labelled data
 					print("getting the features of labelled data")
 					X = pre.get_X(sentences)
@@ -68,7 +69,7 @@ def main():
 					train_model_path = os.path.join(util.modeldir,'train_model.pkl')
 					with open(train_model_path,"wb") as f:
 						pickle.dump(model,f)
-					print("taking the" + str(name) + " to predict on the input")
+					print("taking the " + str(name) + " classifier to predict on the input")
 				else:
 					print("unzip the labelled file or the labelled file does not exist")
 			else:

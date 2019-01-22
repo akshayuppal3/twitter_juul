@@ -177,7 +177,7 @@ def hashtag_count(df):
 # @param df, columns
 # @returns sentences
 def get_sentences(df, column):
-	sentences = list(df[column].progress_apply(get_tokenize_words))
+	sentences = list(df[column].apply(get_tokenize_words))
 	return (sentences)
 
 

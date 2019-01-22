@@ -16,6 +16,12 @@ import posixpath
 import numpy as np
 import nltk
 import ast
+from setup import setup_env
+from tqdm import tqdm
+tqdm.pandas()
+
+setup_env()  # download necessary nltk packages
+stopwords = nltk.corpus.stopwords.words('english')
 
 ## loading the config file
 dir_name = os.getcwd()
@@ -177,7 +183,7 @@ def get_sentences(df, column):
 
 # function to return tokenize words
 ## @param text @return tokenize words
-def get_tokenize_words(text,stopwords):
+def get_tokenize_words(text):
 	tkz = nltk.tokenize
 	words = tkz.word_tokenize(text)
 	words = [ele for ele in words if ((ele not in stopwords) and len(ele) > 2 and (ele.isalpha()))]
