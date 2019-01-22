@@ -2,5 +2,9 @@
   "logdir" : "output/logging/",
   "twintdir" : "output/twintData",
   "inputdir" : "input/",
+<<<<<<< HEAD
   "modeldir"  : "models/"
+=======
+  "modeldir"  : "models/",
+>>>>>>> 52773fe455ca0d827dfec33374163f16ca67f924
 }

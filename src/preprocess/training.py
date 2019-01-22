@@ -39,4 +39,3 @@ class training:
 		print("This might take some time :[estimated(42s)]")
 		ypred = model.predict(self.X)
 		return ypred
-
