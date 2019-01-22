@@ -15,6 +15,9 @@ import util
 def warn(*args, **kwargs):
 	pass
 
+# df_train_lbl is the 500 lablled data
+# df_timeline_lbl is the labelleing of teh entire input file
+
 
 def main():
 	warnings.warn = warn
@@ -94,29 +97,30 @@ def main():
 					X = preprocessing.normalize(X, norm='l1')
 					# get the model from the previous training process
 					train_model_path = os.path.join(util.modeldir,"train_model.pkl")
-					train_model = pickle.load(open(train_model_path),"rb")
+					train_model = pickle.load(open(train_model_path,"rb"))
 					train = training(X)
 					y_pred = train.predict(train_model)
 					## get the no of labelled as 1, 2 and 3
 					print("no of labelled as 3",len(y_pred[y_pred == 3]))
-					print("no of labelled as 2", len(y_pred[y_pred] ==2))
-					print("no of labelled as 1", len(y_pred[y_pred] ==1))
+					print("no of labelled as 2", len(y_pred[y_pred == 2]))
+					print("no of labelled as 1", len(y_pred[y_pred == 1]))
 					df_input['label'] = y_pred
 					# dump the final full labelled dataset
 					input_labelled_path = os.path.join(util.modeldir,"df_timeline_lbl.pkl")
-					with open(input_labelled_path,"rb") as f:
+					with open(input_labelled_path,"wb") as f:
 						pickle.dump(df_input,f)
+					print("labelled data dumped")
 			else:
 				print("w2v embeddings file does not exist")
 		else:
 			print("please specify the input file")
 
 	## extract the poly and mono users
-	elif args['funtion'] == 'users':
+	elif args['function'] == 'users':
 		# get the labelled file
 		if (os.path.exists(os.path.join(util.modeldir + "df_timeline_lbl.pkl"))):
 			lbl_file_path = os.path.join(util.modeldir + "df_timeline_lbl.pkl")
-			df_input = pd.read_csv(lbl_file_path)
+			df_input = pickle.load(open(lbl_file_path, "rb"))
 			# open the weed list
 			weed_words = pickle.load(open(os.path.join(util.modeldir,"weed_words.pkl"),"rb"))
 			weed_words = [(" " + word + " ") for word in weed_words]
@@ -125,7 +129,7 @@ def main():
 			df_tweet_weeds = df_input[df_input['tweetText'].str.contains(pattern, case=False)]
 			index = df_tweet_weeds.index   # the file after filtering have the index contained within
 			df_weeds = df_input.loc[index]
-			poly_users = list(set(list(df_weeds.loc[df_weeds.label_pred == 3]['userID'])))
+			poly_users = list(set(list(df_weeds.loc[df_weeds.label == 3]['userID'])))
 			total_users = list(df_input.userID.unique())
 			poly_length = len(poly_users)
 			total_users_length = len(total_users)

@@ -13,8 +13,6 @@ class training:
 	def __init__(self,X,y=None):
 		self.X = X
 		self.y = y
-		self.X_train , self.X_test , self.y_train, self.y_test = self.split_data() # split the dataset
-
 
 	def split_data(self):
 		# now tring with train_test split
@@ -23,6 +21,7 @@ class training:
 
 	# (Perceptron, knn, dt) measures baseline acc and classification report @return void
 	def train_baseline(self):
+		self.X_train, self.X_test, self.y_train, self.y_test = self.split_data()  # split the dataset
 		print("Training the baseline models(Extra tree, logistic and Naive bayes)")
 		print("\n" * 1)
 		print("This might take some time :[estimated(42s)]")
