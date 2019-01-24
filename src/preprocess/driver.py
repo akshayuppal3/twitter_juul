@@ -30,7 +30,10 @@ def main():
 	if args['function'] == 'w2v':
 		if (args['inputFile']):
 			filename = args['inputFile']
-			df_input = pd.read_csv(filename)  # input data
+			if filename.endswith('.pkl'):
+				df_input = pickle.load(open(filename,"rb"))
+			elif filename.endswith('.csv'):
+				df_input = pd.read_csv(filename)  # input data
 			print("generating sentecnes might take some time (5-10min)")
 			sentences_input = util.get_sentences(df_input, 'tweetText')
 			model = Word2Vec(sentences_input, size=100, min_count=2)
@@ -83,7 +86,10 @@ def main():
 	elif args['function'] == 'predict':
 		if (args['inputFile']):
 			input_file_path = args['inputFile']
-			df_input = pd.read_csv(input_file_path)
+			if input_file_path.endswith('.pkl'):
+				df_input = pickle.load(open(input_file_path,"rb"))
+			elif input_file_path.endswith('.csv'):
+				df_input = pd.read_csv(input_file_path)
 			w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
 			if (os.path.exists(w2v_filename)):  ## check if embedding exists
 				w2v = pickle.load(open(w2v_filename, "rb"))
