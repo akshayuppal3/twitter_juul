@@ -180,6 +180,10 @@ def get_sentences(df, column):
 	sentences = list(df[column].apply(get_tokenize_words))
 	return (sentences)
 
+# function to get the nearest postion for element in the list
+def nearest(items, pivot):
+	return min(items, key=lambda x: abs(x - pivot))
+
 
 # function to return tokenize words
 ## @param text @return tokenize words

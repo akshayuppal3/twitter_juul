@@ -18,6 +18,7 @@ import nltk
 import ast
 from setup import setup_env
 from tqdm import tqdm
+
 tqdm.pandas()
 
 setup_env()  # download necessary nltk packages
@@ -43,6 +44,7 @@ userTimelineLimit = 200  # limit for the no of tweets extracted from user timeli
 friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
+
 
 # @param dataframe and output filename
 def output_to_csv(df, filename):
@@ -156,11 +158,12 @@ def df_write_csv(df, filepath):
 	try:
 		if os.path.isfile(filepath):
 			with open(filepath, 'a') as f:
-				df.to_csv(f,header=False)
+				df.to_csv(f, header=False)
 		else:
 			df.to_csv(filepath)  # in case the file does not exists
 	except IllegalCharacterError:
 		print("Illegal character error")
+
 
 ## @param df  , @return length of hashtags
 def hashtag_count(df):
@@ -172,6 +175,7 @@ def hashtag_count(df):
 			return (0)
 	else:
 		return (0)
+
 
 ## return tokenize sentences
 # @param df, columns
@@ -191,6 +195,11 @@ def get_tokenize_words(text):
 	return words
 
 
+# function to get the nearest postion for element in the list
+def nearest(items, pivot):
+	return min(items, key=lambda x: abs(x - pivot))
+
+
 def getHashtags(tweetObj, extended=False):
 	if extended == True:
 		if 'retweeted_status' in tweetObj._json.keys():
@@ -199,13 +208,14 @@ def getHashtags(tweetObj, extended=False):
 			else:
 				hashtags = None
 		else:
-			hashtags = getHashtags(tweetObj,extended=False)
+			hashtags = getHashtags(tweetObj, extended=False)
 	else:
 		if len(tweetObj.entities['hashtags']) != 0:
 			hashtags = [j['text'] for j in tweetObj.entities['hashtags']]
 		else:
 			hashtags = "None"
 	return hashtags
+
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info

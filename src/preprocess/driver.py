@@ -10,7 +10,7 @@ from preprocess import Preprocess
 from sklearn import preprocessing
 from training import training
 import util
-
+from tqdm import tqdm
 # Suppress warning
 def warn(*args, **kwargs):
 	pass
@@ -37,7 +37,7 @@ def main():
 			print("generating sentecnes might take some time (5-10min)")
 			sentences_input = util.get_sentences(df_input, 'tweetText')
 			sentences_path = os.path.join(util.modeldir, "sentences.pkl")
-			with open(sentences_path,"rb") as f:
+			with open(sentences_path,"wb") as f:
 				pickle.dump(sentences_input,f)
 			print("pickle the sentences")
 			model = Word2Vec(sentences_input, size=100, min_count=2)
@@ -103,10 +103,10 @@ def main():
 					pre = Preprocess(w2v, df_input)
 					sentences_path = os.path.join(util.modeldir, "sentences.pkl")
 					if (os.path.exists(sentences_path)):
-						sentences = pickle.load(open(sentences_path))
+						sentences = pickle.load(open(sentences_path),"rb")
 					else:
 						sentences = util.get_sentences(df_input, 'tweetText')
-						with open(sentences_path,"rb") as f:
+						with open(sentences_path,"wb") as f:
 							pickle.dump(sentences, f)
 					## getting the features of the labelled data
 					print("getting the features of labelled data")
@@ -148,7 +148,7 @@ def main():
 			df_weeds = df_input.loc[index]
 			poly_users = list(set(list(df_weeds.loc[df_weeds.label == 3]['userID'])))
 			poly_path = os.path.join(util.modeldir, "poly_users.pkl")
-			with open(poly_path,"rb") as f:
+			with open(poly_path,"wb") as f:
 				pickle.dump(poly_users,f)
 			total_users = list(df_input.userID.unique())
 			poly_length = len(poly_users)
@@ -165,7 +165,62 @@ def main():
 		else:
 			print("unzip the labelled file or the file does not exist")
 
-
+	elif args['function'] == 'poly_s':
+		# get the labelled file
+		if (os.path.exists(os.path.join(util.modeldir + "df_timeline_lbl.pkl"))):
+			lbl_file_path = os.path.join(util.modeldir + "df_timeline_lbl.pkl")
+			df_input = pickle.load(open(lbl_file_path, "rb"))
+			poly_path = os.path.join(util.modeldir + "poly_users.pkl")
+			if(os.path.exists(poly_path)):
+				poly_users = pickle.load(open(poly_path),"rb")
+				# open the weed list
+				weed_words = pickle.load(open(os.path.join(util.modeldir, "weed_words.pkl"), "rb"))
+				weed_words = [(" " + word + " ") for word in weed_words]
+				pattern_weed = "|".join(weed_words)
+				pattern_juul = 'juul'
+				poly_user1 = list()
+				poly_user2 = list()
+				poly_user3 = list()
+				poly_und = list()
+				total_users = list(df_input.userID.unique())
+				for user in tqdm(poly_users):
+					user_tweets = df_input.loc[df_input.userID == user]
+					user_tweets.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)  # sort by tweet created at
+					juul_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_juul, case=False)]
+					juul_tweets.reset_index(drop=True, inplace=True)
+					if (len(juul_tweets) > 0):
+						time_j = pd.to_datetime(juul_tweets.head(1)['tweetCreatedAt'].values[0])  # getting the tweet with
+					else:
+						time_j = None
+					weed_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_weed, case=False)]
+					weed_tweets_user = weed_tweets[
+						weed_tweets.label_pred == 3]  # .first_valid_index()  # getting teh first creation of juul tweet
+					times_w = None
+					if (len(weed_tweets_user) > 0):
+						times_w = pd.to_datetime(
+							list(weed_tweets['tweetCreatedAt']))  # . weed_tweets.loc[index_w]['tweetCreatedAt'])
+					if (time_j != None and len(times_w) > 0):
+						pos = list(times_w).index(util.nearest((times_w), time_j))
+						if (pos >= len(times_w)):
+							poly_user1.append(user)
+						elif (pos == 0):
+							poly_user2.append(user)
+						else:
+							poly_user3.append(user)
+					else:
+						poly_und.append(user)
+				print("Poly type users calculated")
+				print("total users =", len(total_users))
+				print("****************\n")
+				print("% of pol1 users = ", len(poly_user1)/len(total_users))
+				print("\n")
+				print("% of pol2 users = ", len(poly_user2) / len(total_users))
+				print("\n")
+				print("% of pol3 users = ", len(poly_user3) / len(total_users))
+				print("\n")
+				print("% of undefined users = ", len(poly_und) / len(total_users))
+			else:
+				print("poly users not found- run the users option")
 
 # labelled file does not exist
 
