@@ -41,7 +41,6 @@ class Preprocess:
 	# param sentences, w2v model, full dataframe with all columns
 	def get_X(self, sentences, features='w2v'):
 		w2v = self.w2v
-		df = self.df
 		ob = MeanEmbeddingVectorizer(w2v)
 		w2v_features = ob.transform(sentences)
 		# getting other features

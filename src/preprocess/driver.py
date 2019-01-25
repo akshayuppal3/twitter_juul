@@ -36,6 +36,10 @@ def main():
 				df_input = pd.read_csv(filename)  # input data
 			print("generating sentecnes might take some time (5-10min)")
 			sentences_input = util.get_sentences(df_input, 'tweetText')
+			sentences_path = os.path.join(util.modeldir, "sentences.pkl")
+			with open(sentences_path,"rb") as f:
+				pickle.dump(sentences_input,f)
+			print("pickle the sentences")
 			model = Word2Vec(sentences_input, size=100, min_count=2)
 			w2v = dict(zip(model.wv.index2word, model.wv.syn0))
 			# dump the w2v embeddings
@@ -97,11 +101,17 @@ def main():
 					print("\n************")
 					print(len(df_input))  ## delete
 					pre = Preprocess(w2v, df_input)
-					sentences = util.get_sentences(df_input, 'tweetText')
+					sentences_path = os.path.join(util.modeldir, "sentences.pkl")
+					if (os.path.exists(sentences_path)):
+						sentences = pickle.load(open(sentences_path))
+					else:
+						sentences = util.get_sentences(df_input, 'tweetText')
+						with open(sentences_path,"rb") as f:
+							pickle.dump(sentences, f)
 					## getting the features of the labelled data
 					print("getting the features of labelled data")
 					X = pre.get_X(sentences)
-					X = preprocessing.normalize(X, norm='l1')
+					# X = preprocessing.normalize(X, norm='l1')
 					# get the model from the previous training process
 					train_model_path = os.path.join(util.modeldir,"train_model.pkl")
 					train_model = pickle.load(open(train_model_path,"rb"))
@@ -137,6 +147,9 @@ def main():
 			index = df_tweet_weeds.index   # the file after filtering have the index contained within
 			df_weeds = df_input.loc[index]
 			poly_users = list(set(list(df_weeds.loc[df_weeds.label == 3]['userID'])))
+			poly_path = os.path.join(util.modeldir, "poly_users.pkl")
+			with open(poly_path,"rb") as f:
+				pickle.dump(poly_users,f)
 			total_users = list(df_input.userID.unique())
 			poly_length = len(poly_users)
 			total_users_length = len(total_users)
@@ -151,6 +164,7 @@ def main():
 
 		else:
 			print("unzip the labelled file or the file does not exist")
+
 
 
 # labelled file does not exist
