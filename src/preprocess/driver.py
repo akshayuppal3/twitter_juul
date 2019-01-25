@@ -93,7 +93,8 @@ def main():
 			if input_file_path.endswith('.pkl'):
 				df_input = pickle.load(open(input_file_path,"rb"))
 			elif input_file_path.endswith('.csv'):
-				df_input = pd.read_csv(input_file_path)
+				print(input_file_path)
+				df_input = pd.read_csv(input_file_path,lineterminator='\n')
 			w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
 			if (os.path.exists(w2v_filename)):  ## check if embedding exists
 				w2v = pickle.load(open(w2v_filename, "rb"))
@@ -122,6 +123,83 @@ def main():
 					print("no of labelled as 2", len(y_pred[y_pred == 2]))
 					print("no of labelled as 1", len(y_pred[y_pred == 1]))
 					df_input['label'] = y_pred
+
+					## changes for large files
+					weed_words = pickle.load(open(os.path.join(util.modeldir, "weed_words.pkl"), "rb"))
+					weed_words = [(" " + word + " ") for word in weed_words]
+					pattern_weed = "|".join(weed_words)
+					print("extracting the pattern for juul")
+					df_tweet_weeds = df_input[df_input['tweetText'].str.contains(pattern_weed, case=False)]
+					index = df_tweet_weeds.index  # the file after filtering have the index contained within
+					df_weeds = df_input.loc[index]
+					poly_users = list(set(list(df_weeds.loc[df_weeds.label == 3]['userID'])))
+					total_users = list(df_input.userID.unique())
+					poly_length = len(poly_users)
+					total_users_length = len(total_users)
+					mono_length = total_users_length - poly_length
+					print("total users = ", total_users_length)
+					print("no of poly users = ", poly_length)
+					print("no of mono users = ", mono_length)
+					print("% of poly users is ", poly_length / total_users_length)
+					print("% of mono users is ", mono_length / total_users_length)
+					print("*** starting with the poly sub type users")
+					pattern_juul = 'juul'
+					poly_user1 = list()
+					poly_user2 = list()
+					poly_user3 = list()
+					poly_und = list()
+					total_users = list(df_input.userID.unique())
+					for user in tqdm(poly_users):
+						user_tweets = df_input.loc[df_input.userID == user]
+						user_tweets.sort_values(by='tweetCreatedAt', ascending=True,
+						                        inplace=True)  # sort by tweet created at
+						juul_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_juul, case=False)]
+						juul_tweets.reset_index(drop=True, inplace=True)
+						if (len(juul_tweets) > 0):
+							time_j = pd.to_datetime(
+								juul_tweets.head(1)['tweetCreatedAt'].values[0])  # getting the tweet with
+						else:
+							time_j = None
+						weed_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_weed, case=False)]
+						weed_tweets_user = weed_tweets[weed_tweets.label == 3]
+						times_w = None
+						if (len(weed_tweets_user) > 0):
+							times_w = pd.to_datetime(
+								list(weed_tweets['tweetCreatedAt']))  # . weed_tweets.loc[index_w]['tweetCreatedAt'])
+						if (time_j != None and len(times_w) > 0):
+							pos = list(times_w).index(util.nearest((times_w), time_j))
+							if (pos >= len(times_w)):
+								poly_user1.append(user)
+							elif (pos == 0):
+								poly_user2.append(user)
+							else:
+								poly_user3.append(user)
+						else:
+							poly_und.append(user)
+					print("Poly type users calculated")
+					print("total users =", len(total_users))
+					print("****************\n")
+					print("% of pol1 users = ", len(poly_user1) / len(total_users))
+					print("\n")
+					print("% of pol2 users = ", len(poly_user2) / len(total_users))
+					print("\n")
+					print("% of pol3 users = ", len(poly_user3) / len(total_users))
+					print("\n")
+					print("% of undefined users = ", len(poly_und) / len(total_users))
+
+					poly_path = os.path.join(util.modeldir, "poly_users.pkl")
+					with open(poly_path, "wb") as f:
+						pickle.dump(poly_users, f)
+					poly1_path = os.path.join(util.modeldir, "poly_user1.pkl")
+					with open(poly1_path, "wb") as f:
+						pickle.dump(poly_user1, f)
+					poly2_path = os.path.join(util.modeldir, "poly_user2.pkl")
+					with open(poly2_path, "wb") as f:
+						pickle.dump(poly_user2, f)
+					poly3_path = os.path.join(util.modeldir, "poly_user3.pkl")
+					with open(poly3_path, "wb") as f:
+						pickle.dump(poly_user3, f)
+					print("dumped the user files")
 					# dump the final full labelled dataset
 					input_labelled_path = os.path.join(util.modeldir,"df_timeline_lbl.pkl")
 					with open(input_labelled_path,"wb") as f:
@@ -142,7 +220,7 @@ def main():
 			weed_words = pickle.load(open(os.path.join(util.modeldir,"weed_words.pkl"),"rb"))
 			weed_words = [(" " + word + " ") for word in weed_words]
 			pattern = "|".join(weed_words)
-			print("extracting the pattern")
+			print("extracting the pattern for juul")
 			df_tweet_weeds = df_input[df_input['tweetText'].str.contains(pattern, case=False)]
 			index = df_tweet_weeds.index   # the file after filtering have the index contained within
 			df_weeds = df_input.loc[index]
