@@ -103,7 +103,7 @@ def main():
 					pre = Preprocess(w2v, df_input)
 					sentences_path = os.path.join(util.modeldir, "sentences.pkl")
 					if (os.path.exists(sentences_path)):
-						sentences = pickle.load(open(sentences_path),"rb")
+						sentences = pickle.load(open(sentences_path,"rb"))
 					else:
 						sentences = util.get_sentences(df_input, 'tweetText')
 						with open(sentences_path,"wb") as f:
@@ -172,7 +172,7 @@ def main():
 			df_input = pickle.load(open(lbl_file_path, "rb"))
 			poly_path = os.path.join(util.modeldir + "poly_users.pkl")
 			if(os.path.exists(poly_path)):
-				poly_users = pickle.load(open(poly_path),"rb")
+				poly_users = pickle.load(open(poly_path,"rb"))
 				# open the weed list
 				weed_words = pickle.load(open(os.path.join(util.modeldir, "weed_words.pkl"), "rb"))
 				weed_words = [(" " + word + " ") for word in weed_words]
