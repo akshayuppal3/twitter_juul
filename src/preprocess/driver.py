@@ -193,8 +193,7 @@ def main():
 					else:
 						time_j = None
 					weed_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_weed, case=False)]
-					weed_tweets_user = weed_tweets[
-						weed_tweets.label_pred == 3]  # .first_valid_index()  # getting teh first creation of juul tweet
+					weed_tweets_user = weed_tweets[weed_tweets.label == 3]
 					times_w = None
 					if (len(weed_tweets_user) > 0):
 						times_w = pd.to_datetime(
