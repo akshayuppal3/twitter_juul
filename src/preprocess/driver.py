@@ -36,6 +36,10 @@ def main():
 				df_input = pd.read_csv(filename)  # input data
 			print("generating sentecnes might take some time (5-10min)")
 			sentences_input = util.get_sentences(df_input, 'tweetText')
+			sentences_file = os.path.join(util.modeldir, "sentences.pkl")
+			with open("sentences.pkl") as f:
+				pickle.dump(sentences_file,f)
+			print("pickle the sentences")
 			model = Word2Vec(sentences_input, size=100, min_count=2)
 			w2v = dict(zip(model.wv.index2word, model.wv.syn0))
 			# dump the w2v embeddings
@@ -97,11 +101,17 @@ def main():
 					print("\n************")
 					print(len(df_input))  ## delete
 					pre = Preprocess(w2v, df_input)
-					sentences = util.get_sentences(df_input, 'tweetText')
+					sentences_file = os.path.join(util.modeldir, "sentences.pkl")
+					if (os.path.exists(sentences_file)):
+						sentences = pickle.load(open(sentences_file))
+					else:
+						sentences = util.get_sentences(df_input, 'tweetText')
+						with open("sentences.pkl") as f:
+							pickle.dump(sentences_file, f)
 					## getting the features of the labelled data
 					print("getting the features of labelled data")
 					X = pre.get_X(sentences)
-					X = preprocessing.normalize(X, norm='l1')
+					# X = preprocessing.normalize(X, norm='l1')
 					# get the model from the previous training process
 					train_model_path = os.path.join(util.modeldir,"train_model.pkl")
 					train_model = pickle.load(open(train_model_path,"rb"))
