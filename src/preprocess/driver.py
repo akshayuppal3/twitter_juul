@@ -33,7 +33,7 @@ def main():
 			if filename.endswith('.pkl'):
 				df_input = pickle.load(open(filename,"rb"))
 			elif filename.endswith('.csv'):
-				df_input = pd.read_csv(filename)  # input data
+				df_input = pd.read_csv(filename,lineterminator='\n')  # input data
 			print("generating sentecnes might take some time (5-10min)")
 			sentences_input = util.get_sentences(df_input, 'tweetText')
 			sentences_path = os.path.join(util.modeldir, "sentences.pkl")
@@ -161,12 +161,14 @@ def main():
 						else:
 							time_j = None
 						weed_tweets = user_tweets[user_tweets['tweetText'].str.contains(pattern_weed, case=False)]
-						weed_tweets_user = weed_tweets[weed_tweets.label == 3]
-						times_w = None
-						if (len(weed_tweets_user) > 0):
-							times_w = pd.to_datetime(
-								list(weed_tweets['tweetCreatedAt']))  # . weed_tweets.loc[index_w]['tweetCreatedAt'])
-						if (time_j != None and len(times_w) > 0):
+						if (len(weed_tweets) > 0):
+							weed_tweets_user = weed_tweets[weed_tweets.label == 3]
+							if (len(weed_tweets_user) > 0):
+								times_w = pd.to_datetime(list(weed_tweets_user[
+									                              'tweetCreatedAt']))
+						else:
+							times_w = None
+						if (time_j != None and times_w  is not None):
 							pos = list(times_w).index(util.nearest((times_w), time_j))
 							if (pos >= len(times_w)):
 								poly_user1.append(user)
@@ -179,13 +181,13 @@ def main():
 					print("Poly type users calculated")
 					print("total users =", len(total_users))
 					print("****************\n")
-					print("% of pol1 users = ", len(poly_user1) / len(total_users))
+					print("% of pol1 users = ", len(poly_user1) / len(poly_users))
 					print("\n")
-					print("% of pol2 users = ", len(poly_user2) / len(total_users))
+					print("% of pol2 users = ", len(poly_user2) / len(poly_users))
 					print("\n")
-					print("% of pol3 users = ", len(poly_user3) / len(total_users))
+					print("% of pol3 users = ", len(poly_user3) / len(poly_users))
 					print("\n")
-					print("% of undefined users = ", len(poly_und) / len(total_users))
+					print("% of undefined users = ", len(poly_und) / len(poly_users))
 
 					poly_path = os.path.join(util.modeldir, "poly_users.pkl")
 					with open(poly_path, "wb") as f:

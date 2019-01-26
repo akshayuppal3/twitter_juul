@@ -238,7 +238,7 @@ if __name__ == '__main__':
 		filename_input = args['inputFile4']
 		filename_output = args['outputFile']
 		filename_output = os.path.join(util.inputdir, filename_output)
-		logging.info('getting pairwise matrix for the users')
+		logging.info('getting the timeline data for users')
 		if filename_input.endswith('.xlsx'):
 			df = util.read_excel(filename_input)
 		elif filename_input.endswith('.csv'):
