@@ -11,6 +11,7 @@ weekly_reports
 *.authentication.py
 keys*
 *.edgelist
+models/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
