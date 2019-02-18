@@ -63,23 +63,22 @@ class Cascade():
 		attr = dict()
 		for user in user_list:
 			if user in list(df.userID):
-				user_data = df.loc[df.userID == user]
+				user_data = df.loc[df.userID == user].head(1)
 				attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
 				                'followers': list(user_data['userFollowersCount'])[0],
-				                'level':level}
-		if (attr):
-			nx.set_node_attributes(G,attr)
+				                'level': level}
+		nx.set_node_attributes(G,attr)
 		if (source_node != None):
 			a = df.loc[df.userID == source_node].head(1)
-			attr_source = {source_node, {'friends' : a['friendsCount'].values[0],
-										 'followers' : a['userFollowersCount'].values[0],
-										 'level':0,}}
+			attr_source = {source_node : {'level': 0,
+										 'friends' : list(a['friendsCount'])[0],
+										 'followers' : list(a['friendsCount'])[0]}}
 			nx.set_node_attributes(G,attr_source)
 		return G
 
 	# @param source node, user_list and dataframe
 	# now will check the relationship of all node with the source node, does it have folower or following rel.
-	def create_cascade_lvl_1(self,source_node, user_list, df):
+	def create_cascade_lvl_1(self,source_node, user_list,):
 		G = nx.DiGraph()  # will add edges directly
 		# users type(int)
 		first_nodes = list()
@@ -99,11 +98,10 @@ class Cascade():
 							G.add_edge(user, source_node)
 				except tweepy.TweepError as e:
 					continue
-		G = self.get_node_attributes(G,user_list,df,1,source_node = source_node)  # with labelled node attributes
 		return (G, first_nodes)
 
 	# get the next level of cascades...
-	def create_cascade(self,G, source_id, user_list,level,df):
+	def create_cascade(self,G, source_id, user_list):
 		if (len(user_list) != 0):
 			second_user = list()
 			# find both the following and follower relationship
@@ -121,7 +119,6 @@ class Cascade():
 						if user in set(following):
 							G.add_edge(node, user)
 			rem_users = list(set(user_list) - set(second_user))
-			G = self.get_node_attributes(G,user_list,df,2)
 			return (G, second_user, rem_users)
 
 	# @deprecate	# @param get the users for tattoo cascade
