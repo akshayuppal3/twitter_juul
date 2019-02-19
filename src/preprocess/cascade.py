@@ -121,7 +121,7 @@ class Cascade():
 			rem_users = list(set(user_list) - set(second_user))
 			return (G, second_user, rem_users)
 
-	# @deprecate	# @param get the users for tattoo cascade
+	# @deprecated	# @param get the users for tattoo cascade
 	def get_users_tatto_cascade(self, df):
 		cascade1 = (df.loc[df['retweetCount'] == 781])  ## need to change this as an argument
 		user_tattoos = list(cascade1.userID)
