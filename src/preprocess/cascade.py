@@ -112,36 +112,24 @@ class Cascade():
 					followers = (df_following.following_list[df_following.userID == node].values[0])
 					following = (df_followers.followers_list[df_followers.userID == node].values[0])
 					if ((user in set(followers)) or (user in set(following))):
-						if (user not in second_user):
-							second_user.append(user)
 						if (user in set(followers)):
+							second_user.append(user)
 							G.add_edge(user, node)
 						if user in set(following):
+							second_user.append(user)
 							G.add_edge(node, user)
+			second_user = list(set(second_user))
 			rem_users = list(set(user_list) - set(second_user))
 			return (G, second_user, rem_users)
 
-	# @deprecated	# @param get the users for tattoo cascade
-	def get_users_tatto_cascade(self, df):
-		cascade1 = (df.loc[df['retweetCount'] == 781])  ## need to change this as an argument
-		user_tattoos = list(cascade1.userID)
-		# getting the first node the sorted list
-		tattoo_node = cascade1.head(1)['userID'].values[0]
-		user_tattoos.remove(tattoo_node)
-		return (tattoo_node, user_tattoos)
-
-if __name__ == '__main__':
-	ob = Cascade()
-	parser = argparse.ArgumentParser(description='Extracting data from userDataFile')
-	parser.add_argument('-i', '--inputFilepath', help='Specify the input file path for extracting friends', required=False)
-	args = vars(parser.parse_args())
-	if (args['inputFile']):
-		logging.info('[NEW] ---------------------------------------------')
-		input_path = args['inputFilepath']
-		df = pd.read_csv(input_path, lineterminator="\n")
-		tattoo_node,user_list = ob.get_users_tatto_cascade(df)
-		G, first_level = ob.create_cascade_lvl_1(tattoo_node, user_list)
-		rem_users = list(set(user_list) - set(first_level))
-		## get level 2
-		G,_second_user,rem_users_ = ob.create_cascade(G, first_level, rem_users, 2)
-		nx.write_gpickle(G, "/Users/akshayuppal/Desktop/thesis/twitter_juul/models/tattoo.gpickle")
+	def get_cascade(self,df, source_node, user_list, level_termiante):
+		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
+		# rest levels
+		G = self.get_node_attributes(G, first_users, df, 1, source_node=source_node)
+		rem_users = set(user_list) - set(first_users)
+		level = 1
+		users_next = first_users
+		while (level <= level_termiante):
+			G, users_next, rem_users = self.create_cascade(G, users_next, rem_users)
+			G = self.get_node_attributes(G, users_next, df, level)
+			level += 1
