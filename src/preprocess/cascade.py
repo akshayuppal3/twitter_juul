@@ -8,6 +8,7 @@ import git
 import argparse
 import pickle
 import util
+from collections import deque
 import os
 
 logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
@@ -23,15 +24,6 @@ class Cascade():
 		git_root = git_repo.git.rev_parse("--show-toplevel")
 		return git_root
 
-	# @param get the users for tattoo cascade
-	def get_users_tatto_cascade(self,df):
-		cascade1 = (df.loc[df['retweetCount'] == 781])
-		user_tattoos = list(cascade1.userID)
-		# getting the first node the sorted list
-		tattoo_node = cascade1.head(1)['userID'].values[0]
-		user_tattoos.remove(tattoo_node)
-		return (tattoo_node,user_tattoos)
-
 	def get_api(self):
 		ob = Authenticate()
 		api_list = ob.api
@@ -42,7 +34,7 @@ class Cascade():
 		df = pd.DataFrame()
 		print("finding connection for " + typef + " network might take some time\n")
 		for user in tqdm(user_list):
-			apis = self.api_list
+			apis = deque(self.api_list)
 			apis.rotate(-1)
 			api = apis[0]
 			try:
@@ -65,13 +57,33 @@ class Cascade():
 				continue
 		return df
 
+	# @param: user_list= list of users ,df: (dataframe) containing user information
+	# @ return a G with node attributes (# friends, # followers, # level)
+	def get_node_attributes(self,G,user_list,df,level,source_node=None):
+		attr = dict()
+		for user in user_list:
+			if user in list(df.userID):
+				user_data = df.loc[df.userID == user].head(1)
+				attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
+				                'followers': list(user_data['userFollowersCount'])[0],
+				                'level': level}
+		nx.set_node_attributes(G,attr)
+		if (source_node != None):
+			a = df.loc[df.userID == source_node].head(1)
+			attr_source = {source_node : {'level': 0,
+										 'friends' : list(a['friendsCount'])[0],
+										 'followers' : list(a['friendsCount'])[0]}}
+			nx.set_node_attributes(G,attr_source)
+		return G
+
+	# @param source node, user_list and dataframe
 	# now will check the relationship of all node with the source node, does it have folower or following rel.
-	def create_cascade_lvl_1(self,source_node, user_list):
+	def create_cascade_lvl_1(self,source_node, user_list,):
 		G = nx.DiGraph()  # will add edges directly
 		# users type(int)
 		first_nodes = list()
 		for user in tqdm(user_list):
-			apis = self.api_list
+			apis = deque(self.api_list)
 			apis.rotate(-1)
 			api = apis[0]
 			if (user != source_node):
@@ -89,7 +101,7 @@ class Cascade():
 		return (G, first_nodes)
 
 	# get the next level of cascades...
-	def create_cascade(self,G, source_id, user_list,level):
+	def create_cascade(self,G, source_id, user_list):
 		if (len(user_list) != 0):
 			second_user = list()
 			# find both the following and follower relationship
@@ -106,13 +118,17 @@ class Cascade():
 							G.add_edge(user, node)
 						if user in set(following):
 							G.add_edge(node, user)
-			name = 'tattoo_lvl' + str(level + 1) + '.edgelist'
-			path = os.path.join(self.get_git_root(os.getcwd()), "model", name)
-			fh = open(path, 'wb')
-			nx.write_edgelist(G, fh, data=False)
 			rem_users = list(set(user_list) - set(second_user))
 			return (G, second_user, rem_users)
 
+	# @deprecated	# @param get the users for tattoo cascade
+	def get_users_tatto_cascade(self, df):
+		cascade1 = (df.loc[df['retweetCount'] == 781])  ## need to change this as an argument
+		user_tattoos = list(cascade1.userID)
+		# getting the first node the sorted list
+		tattoo_node = cascade1.head(1)['userID'].values[0]
+		user_tattoos.remove(tattoo_node)
+		return (tattoo_node, user_tattoos)
 
 if __name__ == '__main__':
 	ob = Cascade()
@@ -128,3 +144,4 @@ if __name__ == '__main__':
 		rem_users = list(set(user_list) - set(first_level))
 		## get level 2
 		G,_second_user,rem_users_ = ob.create_cascade(G, first_level, rem_users, 2)
+		nx.write_gpickle(G, "/Users/akshayuppal/Desktop/thesis/twitter_juul/models/tattoo.gpickle")
