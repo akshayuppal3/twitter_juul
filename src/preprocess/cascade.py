@@ -117,7 +117,7 @@ class Cascade():
 						if ('followers_list' in df_followers):
 							followers = (df_followers.followers_list[df_followers.userID == node].values[0])
 							if (user in set(followers)):
-								second_user.append(user)
+								second_user.append(user) # if node not in G.nodes
 								G.add_edge(user, node)
 				second_user = list(set(second_user))
 				rem_users = list(set(user_list) - set(second_user))
@@ -139,7 +139,7 @@ class Cascade():
 		if(len(G.nodes()) > 0):
 			if (rem_users):  # there rem users to continue to next level and G should not be empty
 				while True:
-					G, users_next, rem_users_new = self.create_cascade(G, users_next, rem_users)
+					G, users_next, rem_users = self.create_cascade(G, users_next, rem_users)
 					G = self.get_node_attributes(G, users_next, df, level)
 					print("at level",level)
 					logging.info(str("at level "+ str(level)))
@@ -179,7 +179,20 @@ class Cascade():
 					                             ignore_index=True)
 		return df_tweets
 
+
 if __name__ == '__main__':
+	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
+	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
+	cas = Cascade()
+	## looking at the cascade 229 (juul)
+	juul_cascade = hexagon_data.loc[hexagon_data.retweetCount == 229]
+	source_node = juul_cascade.head(1).userID.values[0]
+	users = list(juul_cascade.userID.unique())
+	users.remove(source_node)
+	G_juul = cas.get_cascade(hexagon_data, source_node, users)
+
+
+if __name__ == '__min__':
 	logging.info("*****************new extraction of cascade process started***********************")
 	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
