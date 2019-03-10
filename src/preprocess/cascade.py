@@ -104,15 +104,19 @@ class Cascade():
 			second_user = list()
 			# find the follower relationship
 			df_followers = self.find_connections( source_id, 'followers')
-			for node in tqdm(source_id):
-				for user in user_list:
-					followers = (df_followers.followers_list[df_followers.userID == node].values[0])
-					if (user in set(followers)):
-						second_user.append(user)
-						G.add_edge(user, node)
-			second_user = list(set(second_user))
-			rem_users = list(set(user_list) - set(second_user))
-			return (G, second_user, rem_users)
+			if (df_followers):
+				for node in tqdm(source_id):
+					for user in user_list:
+						if ('followers_list' in df_followers):
+							followers = (df_followers.followers_list[df_followers.userID == node].values[0])
+							if (user in set(followers)):
+								second_user.append(user)
+								G.add_edge(user, node)
+				second_user = list(set(second_user))
+				rem_users = list(set(user_list) - set(second_user))
+				return (G, second_user, rem_users)
+			else:
+				return (G, source_node, user_list)
 
 	def get_cascade(self,df, source_node, user_list, level_termiante=None):
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
