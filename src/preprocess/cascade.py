@@ -136,7 +136,6 @@ class Cascade():
 		rem_users = set(user_list) - set(first_users)
 		level = 2  ## for the next levels
 		users_next = first_users
-		rem_users_old = list()
 		if(len(G.nodes()) > 0):
 			if (rem_users):  # there rem users to continue to next level and G should not be empty
 				while True:
@@ -147,12 +146,6 @@ class Cascade():
 					level += 1
 					if (not users_next):  # have black users for next level
 						return G
-					if (set(rem_users_old) == set(rem_users_new)): # if no addition of new_nodes then break
-						print("breaking as no progression")
-						logging.info("breaking as no progression")
-						return G
-					else:
-						rem_users_old = rem_users_new
 					if level_termiante:
 						if (level > level_termiante):
 							return G
