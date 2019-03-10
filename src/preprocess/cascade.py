@@ -5,12 +5,10 @@ import tweepy
 from tqdm import tqdm
 import networkx as nx
 import git
-import argparse
-import pickle
 import util
 from collections import deque
 import os
-
+import numpy as np
 logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
 
 
@@ -32,7 +30,7 @@ class Cascade():
 	# return the dataframe @type= <following,follower>
 	def find_connections(self, user_list, typef='following'):
 		df = pd.DataFrame()
-		print("finding connection for " + typef + " network might take some time\n")
+		logging.info(str("finding connection for " + str(typef) + " network might take some time\n"))
 		for user in tqdm(user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
@@ -50,8 +48,6 @@ class Cascade():
 						'userID': user,
 						'followers_list': friends
 					}
-				else:
-					print("wrong type specified")
 				df = df.append(data, ignore_index=True)
 			except tweepy.TweepError as e:
 				continue
@@ -61,6 +57,8 @@ class Cascade():
 	# @ return a G with node attributes (# friends, # followers, # level)
 	def get_node_attributes(self,G,user_list,df,level,source_node=None):
 		attr = dict()
+		if (isinstance(user_list,(int, np.integer))):
+			user_list = list([user_list])
 		for user in user_list:
 			if user in list(df.userID):
 				user_data = df.loc[df.userID == user].head(1)
@@ -82,6 +80,8 @@ class Cascade():
 		G = nx.DiGraph()  # will add edges directly
 		# users type(int)
 		first_nodes = list()
+		if (isinstance(user_list,(int, np.integer))):
+			user_list = list([user_list])
 		for user in tqdm(user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
@@ -100,11 +100,13 @@ class Cascade():
 
 	# get the next level of cascades...
 	def create_cascade(self,G, source_id, user_list):
+		if (isinstance(user_list,(int, np.integer))):
+			user_list = list([user_list])
 		if (len(user_list) != 0):
 			second_user = list()
 			# find the follower relationship
 			df_followers = self.find_connections( source_id, 'followers')
-			if (df_followers):
+			if (not df_followers.empty):
 				for node in tqdm(source_id):
 					for user in user_list:
 						if ('followers_list' in df_followers):
@@ -119,6 +121,8 @@ class Cascade():
 				return (G, source_node, user_list)
 
 	def get_cascade(self,df, source_node, user_list, level_termiante=None):
+		if (isinstance(user_list,(int, np.integer))):
+			user_list = list([user_list])
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
 		# rest levels
 		G = self.get_node_attributes(G, first_users, df, 1, source_node=source_node)
@@ -132,9 +136,11 @@ class Cascade():
 					G, users_next, rem_users_new = self.create_cascade(G, users_next, rem_users)
 					G = self.get_node_attributes(G, users_next, df, level)
 					print("at level",level)
+					logging.info(str("at level "+ str(level)))
 					level += 1
 					if (set(rem_users_old) == set(rem_users_new)): # if no addition of new_nodes then break
 						print("breaking as no progression")
+						logging.info("breaking as no progression")
 						break
 					else:
 						rem_users_old = rem_users_new
@@ -144,6 +150,18 @@ class Cascade():
 				return(G)
 		else:
 			return (G)
+
+	## get existing files
+	def get_existing_user(self,path):
+		filenames = [file for file in os.listdir(path) if file.endswith(".gpickle")]
+		userIDs = list()
+		for file in filenames:
+			names = file.split('_')
+			if len(names) == 3:
+				userID = names[1]
+				if (isinstance(int(userID), int)):
+					userIDs.append(userID)
+		return userIDs
 
 	## getting the tweet text and their occurances
 	def get_unique_tweets(self,df):
@@ -161,20 +179,30 @@ class Cascade():
 		return df_tweets
 
 if __name__ == '__main__':
+	logging.info("new extraction of cascade process started")
 	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
+	graph_path = os.path.join(util.get_git_root(os.getcwd()), "models", "graphs")
 	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
 	cas = Cascade()
+	# get the existing files:
+	existing_users = cas.get_existing_user(graph_path)
 	df_tweets = cas.get_unique_tweets(hexagon_data)
 	for i in range(len(df_tweets)):
 		cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 		cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 		cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
 		source_node = cascade.head(1)['userID'].values[0]
-		retweet_count = cascade.head(1)['retweetCount'].values[0]
-		users = list(cascade['userID'])
-		users.remove(source_node)
-		G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
-		filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
-		nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+		if (source_node not in set(existing_users)):
+			logging.info(str("creating cascade for user " + str(source_node)))
+			retweet_count = cascade.head(1)['retweetCount'].values[0]
+			users = list(cascade['userID'])
+			users.remove(source_node)
+			if (isinstance(users, (int, np.integer))):
+				user_list = list([users])
+			G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
+			filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
+			nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+		else:
+			logging.info(str("userID: " + str(source_node) + " already exists"))
 
