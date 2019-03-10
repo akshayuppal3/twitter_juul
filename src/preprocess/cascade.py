@@ -30,7 +30,7 @@ class Cascade():
 	# return the dataframe @type= <following,follower>
 	def find_connections(self, user_list, typef='following'):
 		df = pd.DataFrame()
-		logging.info(str("finding connection for " + str(typef) + " network might take some time\n"))
+		logging.info(str("finding connection for " + str(typef) + " network might take some time"))
 		for user in tqdm(user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
@@ -179,7 +179,7 @@ class Cascade():
 		return df_tweets
 
 if __name__ == '__main__':
-	logging.info("new extraction of cascade process started")
+	logging.info("*****************new extraction of cascade process started***********************")
 	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
 	graph_path = os.path.join(util.get_git_root(os.getcwd()), "models", "graphs")
@@ -201,8 +201,11 @@ if __name__ == '__main__':
 			if (isinstance(users, (int, np.integer))):
 				user_list = list([users])
 			G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
-			filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
-			nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+			if (G):
+				filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
+				nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+			else:
+				logging.info(str("userID: " + str(source_node) + " no cascade returned"))
 		else:
 			logging.info(str("userID: " + str(source_node) + " already exists"))
 
