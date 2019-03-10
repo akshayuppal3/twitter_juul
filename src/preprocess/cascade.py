@@ -162,7 +162,7 @@ if __name__ == '__main__':
 	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
 	cas = Cascade()
 	df_tweets = cas.get_unique_tweets(hexagon_data)
-	for i in range(len(df_tweets[:2])):
+	for i in range(len(df_tweets)):
 		cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 		cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 		cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
