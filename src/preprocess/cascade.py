@@ -92,8 +92,6 @@ class Cascade():
 					if ((relation_obj.following == True) or (relation_obj.followed_by == True)):
 						if user not in first_nodes:
 							first_nodes.append(user)
-						if (relation_obj.following == True):
-							G.add_edge(source_node, user)
 						if (relation_obj.followed_by == True):
 							G.add_edge(user, source_node)
 				except tweepy.TweepError as e:
@@ -104,32 +102,75 @@ class Cascade():
 	def create_cascade(self,G, source_id, user_list):
 		if (len(user_list) != 0):
 			second_user = list()
-			# find both the following and follower relationship
-			df_following = self.find_connections( source_id, 'following')
+			# find the follower relationship
 			df_followers = self.find_connections( source_id, 'followers')
 			for node in tqdm(source_id):
 				for user in user_list:
-					followers = (df_following.following_list[df_following.userID == node].values[0])
-					following = (df_followers.followers_list[df_followers.userID == node].values[0])
-					if ((user in set(followers)) or (user in set(following))):
-						if (user in set(followers)):
-							second_user.append(user)
-							G.add_edge(user, node)
-						if user in set(following):
-							second_user.append(user)
-							G.add_edge(node, user)
+					followers = (df_followers.followers_list[df_followers.userID == node].values[0])
+					if (user in set(followers)):
+						second_user.append(user)
+						G.add_edge(user, node)
 			second_user = list(set(second_user))
 			rem_users = list(set(user_list) - set(second_user))
 			return (G, second_user, rem_users)
 
-	def get_cascade(self,df, source_node, user_list, level_termiante):
+	def get_cascade(self,df, source_node, user_list, level_termiante=None):
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
 		# rest levels
 		G = self.get_node_attributes(G, first_users, df, 1, source_node=source_node)
 		rem_users = set(user_list) - set(first_users)
 		level = 1
 		users_next = first_users
-		while (level <= level_termiante):
-			G, users_next, rem_users = self.create_cascade(G, users_next, rem_users)
-			G = self.get_node_attributes(G, users_next, df, level)
-			level += 1
+		rem_users_old = list()
+		if(len(G.nodes()) > 0):
+			if (rem_users):  # there rem users to continue to next level and G should not be empty
+				while True:
+					G, users_next, rem_users_new = self.create_cascade(G, users_next, rem_users)
+					G = self.get_node_attributes(G, users_next, df, level)
+					print("at level",level)
+					level += 1
+					if (set(rem_users_old) == set(rem_users_new)): # if no addition of new_nodes then break
+						print("breaking as no progression")
+						break
+					else:
+						rem_users_old = rem_users_new
+					if level_termiante:
+						if (level > level_termiante):
+							break
+				return(G)
+		else:
+			return (G)
+
+	## getting the tweet text and their occurances
+	def get_unique_tweets(self,df):
+		tweet_text_list = list()
+		df_tweets = pd.DataFrame([])
+		for index, tweet in df.iterrows():
+			text = tweet['tweetText']
+			retweet_count = tweet['retweetCount']
+			if retweet_count > 0:
+				if text not in tweet_text_list:
+					tweet_text_list.append(text)
+					df_tweets = df_tweets.append(pd.DataFrame({'tweet_text': text,
+					                                           'retweet_count': retweet_count}, index=[0]),
+					                             ignore_index=True)
+		return df_tweets
+
+if __name__ == '__main__':
+	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
+	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
+	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
+	cas = Cascade()
+	df_tweets = cas.get_unique_tweets(hexagon_data)
+	for i in range(len(df_tweets[:2])):
+		cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
+		cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
+		cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
+		source_node = cascade.head(1)['userID'].values[0]
+		retweet_count = cascade.head(1)['retweetCount'].values[0]
+		users = list(cascade['userID'])
+		users.remove(source_node)
+		G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
+		filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
+		nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+
