@@ -204,16 +204,20 @@ if __name__ == '__main__':
 			retweet_count = cascade.head(1)['retweetCount'].values[0]
 			users = set(list(cascade['userID'])) # to remove duplicate entries
 			users = list(users)
-			users.remove(source_node)
+			if (source_node in users):
+				users.remove(source_node)
 			if (isinstance(users, (int, np.integer))):
 				user_list = list([users])
-			G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
-			if (G):   # don't dump blank graphs
-				if (G.nodes != 0):
-					filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
-					nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
-			else:
-				logging.info(str("userID: " + str(source_node) + " no cascade returned"))
+				if(set([users]) == set([source_node])):
+					continue    # if both the source and users are same then don't create cascade
+			if (source_node and users):
+				G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
+				if (G):   # don't dump blank graphs
+					if (G.nodes != 0):
+						filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
+						nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+				else:
+					logging.info(str("userID: " + str(source_node) + " no cascade returned"))
 		else:
 			logging.info(str("userID: " + str(source_node) + " already exists"))
 
