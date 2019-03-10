@@ -179,20 +179,7 @@ class Cascade():
 					                             ignore_index=True)
 		return df_tweets
 
-
 if __name__ == '__main__':
-	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
-	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
-	cas = Cascade()
-	## looking at the cascade 229 (juul)
-	juul_cascade = hexagon_data.loc[hexagon_data.retweetCount == 229]
-	source_node = juul_cascade.head(1).userID.values[0]
-	users = list(juul_cascade.userID.unique())
-	users.remove(source_node)
-	G_juul = cas.get_cascade(hexagon_data, source_node, users)
-
-
-if __name__ == '__min__':
 	logging.info("*****************new extraction of cascade process started***********************")
 	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
