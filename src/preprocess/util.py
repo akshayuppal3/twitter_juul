@@ -18,6 +18,7 @@ import nltk
 import ast
 from setup import setup_env
 from tqdm import tqdm
+import git
 
 tqdm.pandas()
 
@@ -45,6 +46,12 @@ friendLimit = 100
 startDate = '2018-05-01'
 endDate = '2018-05-02'
 
+
+# get the git repo
+def get_git_root(path):
+	git_repo = git.Repo(path, search_parent_directories=True)
+	git_root = git_repo.git.rev_parse("--show-toplevel")
+	return git_root
 
 # @param dataframe and output filename
 def output_to_csv(df, filename):
@@ -175,7 +182,6 @@ def hashtag_count(df):
 			return (0)
 	else:
 		return (0)
-
 
 ## return tokenize sentences
 # @param df, columns
