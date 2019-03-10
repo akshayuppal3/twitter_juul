@@ -57,25 +57,26 @@ class Cascade():
 	# @ return a G with node attributes (# friends, # followers, # level)
 	def get_node_attributes(self,G,user_list,df,level,source_node=None):
 		attr = dict()
-		if (source_node != None):
-			if (source_node in user_list):
-				user_list.remove(source_node)
-			a = df.loc[df.userID == source_node].head(1)
-			attr_source = {source_node : {'level': 0,
-										 'friends' : list(a['friendsCount'])[0],
-										 'followers' : list(a['friendsCount'])[0]}}
-			nx.set_node_attributes(G,attr_source)
-		if (isinstance(user_list,(int, np.integer))):
-			user_list = list([user_list])
-		for user in user_list:
-			if user in list(df.userID):
-				user_data = df.loc[df.userID == user].head(1)
-				if ('level' not in G[user]):    # if the level doesn't exist already
-					attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
-					                'followers': list(user_data['userFollowersCount'])[0],
-					                'level': level}
-		nx.set_node_attributes(G,attr)
-
+		if user_list:   # can't label blank user list
+			if (source_node != None):
+				if (source_node in user_list):
+					user_list.remove(source_node)
+				a = df.loc[df.userID == source_node].head(1)
+				attr_source = {source_node : {'level': 0,
+											 'friends' : list(a['friendsCount'])[0],
+											 'followers' : list(a['friendsCount'])[0]}}
+				nx.set_node_attributes(G,attr_source)
+			if (isinstance(user_list,(int, np.integer))):
+				user_list = list([user_list])
+			for user in user_list:
+				if user in list(df.userID):
+					user_data = df.loc[df.userID == user].head(1)
+					if (user in G.nodes):
+						if ('level' not in G[user]):    # if the level doesn't exist already
+							attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
+							                'followers': list(user_data['userFollowersCount'])[0],
+							                'level': level}
+			nx.set_node_attributes(G,attr)
 		return G
 
 	# @param source node, user_list and dataframe
@@ -94,10 +95,10 @@ class Cascade():
 				try:
 					relation_obj = api.show_friendship(source_id=(source_node), target_id=(user))[0]
 					if ((relation_obj.following == True) or (relation_obj.followed_by == True)):
-						if user not in first_nodes:
-							first_nodes.append(user)
 						if (relation_obj.followed_by == True):
 							G.add_edge(user, source_node)
+							if user not in first_nodes:
+								first_nodes.append(user)
 				except tweepy.TweepError as e:
 					continue
 		return (G, first_nodes)
@@ -135,7 +136,6 @@ class Cascade():
 		rem_users = set(user_list) - set(first_users)
 		level = 2  ## for the next levels
 		users_next = first_users
-		rem_users_old = list()
 		if(len(G.nodes()) > 0):
 			if (rem_users):  # there rem users to continue to next level and G should not be empty
 				while True:
@@ -144,16 +144,11 @@ class Cascade():
 					print("at level",level)
 					logging.info(str("at level "+ str(level)))
 					level += 1
-					if (set(rem_users_old) == set(rem_users_new)): # if no addition of new_nodes then break
-						print("breaking as no progression")
-						logging.info("breaking as no progression")
-						break
-					else:
-						rem_users_old = rem_users_new
+					if (not users_next):  # have black users for next level
+						return G
 					if level_termiante:
 						if (level > level_termiante):
-							break
-				return(G)
+							return G
 		else:
 			return (G)
 
