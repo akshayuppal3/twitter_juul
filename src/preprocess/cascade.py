@@ -57,21 +57,25 @@ class Cascade():
 	# @ return a G with node attributes (# friends, # followers, # level)
 	def get_node_attributes(self,G,user_list,df,level,source_node=None):
 		attr = dict()
-		if (isinstance(user_list,(int, np.integer))):
-			user_list = list([user_list])
-		for user in user_list:
-			if user in list(df.userID):
-				user_data = df.loc[df.userID == user].head(1)
-				attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
-				                'followers': list(user_data['userFollowersCount'])[0],
-				                'level': level}
-		nx.set_node_attributes(G,attr)
 		if (source_node != None):
+			if (source_node in user_list):
+				user_list.remove(source_node)
 			a = df.loc[df.userID == source_node].head(1)
 			attr_source = {source_node : {'level': 0,
 										 'friends' : list(a['friendsCount'])[0],
 										 'followers' : list(a['friendsCount'])[0]}}
 			nx.set_node_attributes(G,attr_source)
+		if (isinstance(user_list,(int, np.integer))):
+			user_list = list([user_list])
+		for user in user_list:
+			if user in list(df.userID):
+				user_data = df.loc[df.userID == user].head(1)
+				if ('level' not in G[user]):    # if the level doesn't exist already
+					attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
+					                'followers': list(user_data['userFollowersCount'])[0],
+					                'level': level}
+		nx.set_node_attributes(G,attr)
+
 		return G
 
 	# @param source node, user_list and dataframe
@@ -125,9 +129,11 @@ class Cascade():
 			user_list = list([user_list])
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
 		# rest levels
+		if source_node in first_users:
+			first_users.remove(source_node)
 		G = self.get_node_attributes(G, first_users, df, 1, source_node=source_node)
 		rem_users = set(user_list) - set(first_users)
-		level = 1
+		level = 2  ## for the next levels
 		users_next = first_users
 		rem_users_old = list()
 		if(len(G.nodes()) > 0):
@@ -196,14 +202,16 @@ if __name__ == '__main__':
 		if (source_node not in set(existing_users)):
 			logging.info(str("creating cascade for user " + str(source_node)))
 			retweet_count = cascade.head(1)['retweetCount'].values[0]
-			users = list(cascade['userID'])
+			users = set(list(cascade['userID'])) # to remove duplicate entries
+			users = list(users)
 			users.remove(source_node)
 			if (isinstance(users, (int, np.integer))):
 				user_list = list([users])
 			G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
-			if (G):
-				filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
-				nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
+			if (G):   # don't dump blank graphs
+				if (G.nodes != 0):
+					filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
+					nx.write_gpickle(G, os.path.join(model_path, 'graphs', filename))
 			else:
 				logging.info(str("userID: " + str(source_node) + " no cascade returned"))
 		else:
