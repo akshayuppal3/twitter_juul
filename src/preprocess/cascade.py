@@ -27,6 +27,13 @@ class Cascade():
 		api_list = ob.api
 		return (api_list)
 
+	def is_int(self,str):
+		try:
+			int(str)
+			return True
+		except ValueError:
+			return False
+
 	# return the dataframe @type= <following,follower>
 	def find_connections(self, user_list, typef='following'):
 		df = pd.DataFrame()
@@ -124,6 +131,8 @@ class Cascade():
 				return (G, second_user, rem_users)
 			else:
 				return (G, source_node, user_list)
+		else:
+			return (G,source_id,user_list)
 
 	def get_cascade(self,df, source_node, user_list, level_termiante=None):
 		if (isinstance(user_list,(int, np.integer))):
@@ -144,7 +153,7 @@ class Cascade():
 					print("at level",level)
 					logging.info(str("at level "+ str(level)))
 					level += 1
-					if (not users_next):  # have black users for next level
+					if (not rem_users) or (not users_next): # no more remaining users
 						return G
 					if level_termiante:
 						if (level > level_termiante):
@@ -160,7 +169,7 @@ class Cascade():
 			names = file.split('_')
 			if len(names) == 3:
 				userID = names[1]
-				if (isinstance(int(userID), int)):
+				if (self.is_int(userID)):
 					userIDs.append(userID)
 		return userIDs
 
