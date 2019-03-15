@@ -97,6 +97,7 @@ class Hexagon:
 		extendLimit = "&extendLimit=true"  # extends call number from 500 to 10,000
 		fullContents = "&fullContents=true"  # Brings back full contents for Blog and Tumblr posts which are usually truncated around sea
 		url = '{}id={}{}{}{}{}'.format(endpoint, monitorID, self.authToken, self.getDates(startD,endD), extendLimit, fullContents)
+		print(url)
 		return url
 
 	# columns for hexagon API object
