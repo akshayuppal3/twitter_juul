@@ -35,7 +35,7 @@ modeldir = os.path.join(path1, data['modeldir'])
 format = "%(asctime)s %(levelname)-8s %(message)s"
 dateFormat = "%Y-%m-%d"
 testLimit = 5
-batch_file = 100000
+batch_file = 10000
 startDate = '2014-01-01'
 endDate = '2014-01-12'
 
