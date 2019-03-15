@@ -249,6 +249,8 @@ class Hexagon:
 	def getTwitterData(self, df, user_list,filename,test_mode = False):
 		api_list = self.api
 		apis = deque(api_list)
+		if filename.endswith('.csv'):
+			filename, _ = filename.split('.csv')
 		if 'tweetID' in df:
 			logging.info('[INFO] extraction started for twitter data')
 			df_twitter = pd.DataFrame([])
@@ -294,7 +296,7 @@ class Hexagon:
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
 	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', default=False, type=util.str2bool)
-	parser.add_argument('-f', '--filenameTwitter', help = 'specify the name of the output filename to be stored', default="hexagon_extract")
+	parser.add_argument('-f', '--filenameTwitter', help = 'specify the name of the output filename to be stored', default="hexagon_extract.csv")
 	parser.add_argument('-f2', '--filenameFriends', help = 'specify the name of the file for following data(friends)', default="friendsData.csv" )
 	parser.add_argument('-f3', '--filenameUserTimeline', help ='specify the name of the file for user timeline', default="userTimelineData.csv")
 	parser.add_argument('-t', '--testMode', help = 'test modde to get only sample data, boolean True or False',type=util.str2bool,default=False)
