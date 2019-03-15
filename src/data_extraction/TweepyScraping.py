@@ -64,65 +64,66 @@ class Twitter:
 
 	# @params passing tweet, friendOpt and userinfo(in case of following)
 	# returns data frame of tweet and user info
-	def getTweetObject(self, tweetObj, friendOpt=False, parentID = None,test_mode = False):
+	def getTweetObject(self,tweetObj,user_list ,friendOpt=False, parentID = None,test_mode = False):
 		if tweetObj is not None:
-			friendList = self.getFriendList(tweetObj,test_mode = test_mode,friendOpt=friendOpt)
-			if parentID is None:
-				if 'retweeted_status' in tweetObj._json.keys():
-					text = tweetObj.retweeted_status.full_text.replace("\n", " ")
-					hashtags = self.getHashtags(tweetObj,extended=True)        # for retweeted status
+			print(type(tweetObj.user.id))
+			if (int(tweetObj.user.id) in set(user_list)):
+				friendList = self.getFriendList(tweetObj,test_mode = test_mode,friendOpt=friendOpt)
+				if parentID is None:
+					if 'retweeted_status' in tweetObj._json.keys():
+						text = tweetObj.retweeted_status.full_text.replace("\n", " ")
+						hashtags = self.getHashtags(tweetObj,extended=True)        # for retweeted status
+					else:
+						text = tweetObj.full_text.replace("\n", " ")
+						hashtags = self.getHashtags(tweetObj)
+					data = pd.DataFrame.from_records(
+						[{
+							'tweetId': tweetObj.id_str,
+							'userID': tweetObj.user.id,
+							'tweetText': text,
+							'tweetCreatedAt': tweetObj.created_at,
+							# 'parentID': None,
+							'favourites_count': tweetObj.user.favourites_count,
+							'userLocation': tweetObj.user.location,
+							'userName': tweetObj.user.name,
+							'userDescription': tweetObj.user.description.replace("\n", " "),
+							'userCreatedAt': tweetObj.user.created_at,
+							'imageurl': tweetObj.user.profile_image_url,
+							'userFollowersCount': tweetObj.user.followers_count,
+							'friendsCount': tweetObj.user.friends_count,
+							'friendList': friendList,
+							'hashtags': hashtags,
+							'retweetCount': tweetObj.retweet_count,
+							'retweeted': tweetObj.retweeted,
+							'lang': tweetObj.lang,
+						}], index=None, coerce_float=False)
 				else:
-					text = tweetObj.full_text.replace("\n", " ")
-					hashtags = self.getHashtags(tweetObj)
-
-				data = pd.DataFrame.from_records(
-					[{
-						'tweetId': tweetObj.id_str,
-						'userID': tweetObj.user.id,
-						'tweetText': text,
-						'tweetCreatedAt': tweetObj.created_at,
-						# 'parentID': None,
-						'favourites_count': tweetObj.user.favourites_count,
-						'userLocation': tweetObj.user.location,
-						'userName': tweetObj.user.name,
-						'userDescription': tweetObj.user.description.replace("\n", " "),
-						'userCreatedAt': tweetObj.user.created_at,
-						'imageurl': tweetObj.user.profile_image_url,
-						'userFollowersCount': tweetObj.user.followers_count,
-						'friendsCount': tweetObj.user.friends_count,
-						'friendList': friendList,
-						'hashtags': hashtags,
-						'retweetCount': tweetObj.retweet_count,
-						'retweeted': tweetObj.retweeted,
-						'lang': tweetObj.lang,
-					}], index=None, coerce_float=False)
-			else:
-				data = pd.DataFrame.from_records(
-					[{
-						'userID': tweetObj.id,
-						'parentID': parentID,
-						'userName': tweetObj.name,
-						'userDescription': tweetObj.description,
-						'userCreatedAt': tweetObj.created_at,
-						'userLocation': tweetObj.location,
-						'favourites_count': tweetObj.favourites_count,
-						'friendsCount': tweetObj.friends_count,
-						'userFollowersCount': tweetObj.followers_count,
-						'listedCount': tweetObj.listed_count,
-						'lang': tweetObj.lang,
-						'url' : tweetObj.url,
-						'imageurl': tweetObj.profile_image_url,
-						'userVerified' : tweetObj.verified,
-						'isProtected': tweetObj.protected,
-						'notifications' : tweetObj.notifications,
-						'statusesCount': tweetObj.statuses_count,
-						'geoEnabled': tweetObj.geo_enabled,
-						'contributorEnabled': tweetObj.contributors_enabled,
-						# 'status': tweetObj.status,
-						'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
-						'withheldScope' : tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
-					}], index=[0])
-			return (data)
+					data = pd.DataFrame.from_records(
+						[{
+							'userID': tweetObj.id,
+							'parentID': parentID,
+							'userName': tweetObj.name,
+							'userDescription': tweetObj.description,
+							'userCreatedAt': tweetObj.created_at,
+							'userLocation': tweetObj.location,
+							'favourites_count': tweetObj.favourites_count,
+							'friendsCount': tweetObj.friends_count,
+							'userFollowersCount': tweetObj.followers_count,
+							'listedCount': tweetObj.listed_count,
+							'lang': tweetObj.lang,
+							'url' : tweetObj.url,
+							'imageurl': tweetObj.profile_image_url,
+							'userVerified' : tweetObj.verified,
+							'isProtected': tweetObj.protected,
+							'notifications' : tweetObj.notifications,
+							'statusesCount': tweetObj.statuses_count,
+							'geoEnabled': tweetObj.geo_enabled,
+							'contributorEnabled': tweetObj.contributors_enabled,
+							# 'status': tweetObj.status,
+							'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
+							'withheldScope' : tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
+						}], index=[0])
+				return (data)
 
 
 # @Deprecated
