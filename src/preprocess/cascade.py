@@ -9,7 +9,7 @@ import util
 from collections import deque
 import os
 import numpy as np
-logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"followingData.log"))
+logging.basicConfig(level=logging.INFO, format= util.format, filename= os.path.join(util.logdir,"cascade.log"))
 
 
 class Cascade():
@@ -119,13 +119,14 @@ class Cascade():
 			# find the follower relationship
 			df_followers = self.find_connections( source_id, 'followers')
 			if (not df_followers.empty):
-				for node in tqdm(source_id):
-					for user in user_list:
+				for node in tqdm(source_id):  # node : source_id list
+					for user in user_list:    # user : user_list
 						if ('followers_list' in df_followers):
-							followers = (df_followers.followers_list[df_followers.userID == node].values[0])
-							if (user in set(followers)):
-								second_user.append(user) # if node not in G.nodes
-								G.add_edge(user, node)
+							if (node in list(df_followers.userID)):
+								followers = (df_followers.followers_list[df_followers.userID == node].values[0])
+								if (user in set(followers)):
+									second_user.append(user) # if node not in G.nodes
+									G.add_edge(user, node)
 				second_user = list(set(second_user))
 				rem_users = list(set(user_list) - set(second_user))
 				return (G, second_user, rem_users)
