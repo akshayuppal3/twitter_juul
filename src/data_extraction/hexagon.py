@@ -247,32 +247,32 @@ class Hexagon:
 			return None
 
 	# getting all of the twitter data
-	def getTwitterData(self, df, user_list,filename,test_mode = False):
+	def getTwitterData(self, df_hex_tweets, user_list,filename,test_mode = False):
 		api_list = self.api
 		apis = deque(api_list)
 		if filename.endswith('.csv'):
 			filename, _ = filename.split('.csv')
-		if 'tweetID' in df:
+		if 'tweetID' in df_hex_tweets:
 			logging.info('[INFO] extraction started for twitter data')
 			df_twitter = pd.DataFrame([])
-			if (len(df) > 100):  # to limit the size for api to 100
-				batchSize = int(math.ceil(len(df) / 100))
+			if (len(df_hex_tweets) > 100):  # to limit the size for api to 100
+				batchSize = int(math.ceil(len(df_hex_tweets) / 100))
 				for i in tqdm(range(batchSize)):
 					apis.rotate(-1)
 					api = apis[0]
 					logging.info("[INFO] batch %d started for Twitter data", i )
-					dfBat = df[(100 * i):(100 * (i + 1))]
+					dfBat = df_hex_tweets[(100 * i):(100 * (i + 1))]
 					temp = self.getBatchTwitter(api,dfBat.tweetID.tolist(),user_list,test_mode=test_mode)
 					df_twitter = df_twitter.append(temp)
 					if len(df_twitter) >= util.batch_file:
-						file = filename + str(i) + '.csv'
-						filename = os.path.join(util.inputdir,file)
-						util.output_to_csv(df, filename)
+						file = str(str(filename) + '_' + str(i) + '.csv')
+						file = os.path.join(util.inputdir,file)
+						df_twitter.to_csv(file)
 						df_twitter = pd.DataFrame()
 
 			else:
 				logging.info("[INFO] single batch started for Twitter data")
-				df_twitter = self.getBatchTwitter(df.tweetID.tolist(),test_mode=test_mode)
+				df_twitter = self.getBatchTwitter(df_hex_tweets.tweetID.tolist(),test_mode=test_mode)
 			# data.set_index('tweetId')
 			return (df_twitter)
 		else:
@@ -313,18 +313,18 @@ if __name__ == '__main__':
 	startDate = args['startDate']
 	endDate = args['endDate']
 	ob = Hexagon(test_mode,startDate,endDate)
-	df = ob.hexagonData
+	df_hex_tweets = ob.hexagonData
 	output_filename = args['filenameTwitter']
 	output_filepath = os.path.join(util.inputdir,output_filename)
 	filenameFriends = args['filenameFriends']
 	filenameUserTimeline = args['filenameUserTimeline']
-	if (not df.empty):
+	if (not df_hex_tweets.empty):
 		# filter the data based on the userID
 		user_path = os.path.join(util.inputdir,"users_list.xlsx")
 		if (os.path.exists(user_path)):
 			df_users = util.read_excel(user_path)
 			users = util.getUsers(df_users,"ID")
-			tweet_data = ob.getTwitterData(df,users,output_filename,test_mode=test_mode)   # using twint for friends data
+			tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename,test_mode=test_mode)   # using twint for friends data
 			ob.output(tweet_data, output_filepath)
 			if friendOpt == True:
 				logging.info("[INFO] extracting friends data")
