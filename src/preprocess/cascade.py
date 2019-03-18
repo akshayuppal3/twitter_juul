@@ -27,17 +27,14 @@ class Cascade():
 		api_list = ob.api
 		return (api_list)
 
-	def is_int(self,str):
-		try:
-			int(str)
-			return True
-		except ValueError:
-			return False
+
 
 	# return the dataframe @type= <following,follower>
 	def find_connections(self, user_list, typef='following'):
 		df = pd.DataFrame()
 		logging.info(str("finding connection for " + str(typef) + " network might take some time"))
+		if (util.is_number(user_list)):
+			user_list = list([user_list])
 		for user in tqdm(user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
@@ -64,6 +61,8 @@ class Cascade():
 	# @ return a G with node attributes (# friends, # followers, # level)
 	def get_node_attributes(self,G,user_list,df,level,source_node=None):
 		attr = dict()
+		if (util.is_number(user_list)):
+			user_list = list([user_list])
 		if user_list:   # can't label blank user list
 			if (source_node != None):
 				if (source_node in user_list):
@@ -73,8 +72,6 @@ class Cascade():
 											 'friends' : list(a['friendsCount'])[0],
 											 'followers' : list(a['friendsCount'])[0]}}
 				nx.set_node_attributes(G,attr_source)
-			if (isinstance(user_list,(int, np.integer))):
-				user_list = list([user_list])
 			for user in user_list:
 				if user in list(df.userID):
 					user_data = df.loc[df.userID == user].head(1)
@@ -92,7 +89,7 @@ class Cascade():
 		G = nx.DiGraph()  # will add edges directly
 		# users type(int)
 		first_nodes = list()
-		if (isinstance(user_list,(int, np.integer))):
+		if (util.is_number(user_list)):
 			user_list = list([user_list])
 		for user in tqdm(user_list):
 			apis = deque(self.api_list)
@@ -112,8 +109,10 @@ class Cascade():
 
 	# get the next level of cascades...
 	def create_cascade(self,G, source_id, user_list):
-		if (isinstance(user_list,(int, np.integer))):
+		if (util.is_number(user_list)):
 			user_list = list([user_list])
+		if (util.is_number(source_id)):
+			source_id = list([source_id])
 		if (len(user_list) != 0):
 			second_user = list()
 			# find the follower relationship
@@ -136,7 +135,7 @@ class Cascade():
 			return (G,source_id,user_list)
 
 	def get_cascade(self,df, source_node, user_list, level_termiante=None):
-		if (isinstance(user_list,(int, np.integer))):
+		if (util.is_number(user_list)):
 			user_list = list([user_list])
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
 		# rest levels
