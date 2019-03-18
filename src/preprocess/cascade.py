@@ -169,7 +169,7 @@ class Cascade():
 			names = file.split('_')
 			if len(names) == 3:
 				userID = names[1]
-				if (self.is_int(userID)):
+				if (util.is_int(userID)):
 					userIDs.append(userID)
 		return userIDs
 
