@@ -47,6 +47,32 @@ startDate = '2018-05-01'
 endDate = '2018-05-02'
 
 
+def is_int(ele):
+	try:
+		int(ele)
+		return True
+	except ValueError:
+		return False
+
+
+def is_float(ele):
+	try:
+		float(ele)
+		return True
+	except ValueError:
+		return False
+
+
+def is_number(ele):
+	try:
+		if len(ele):
+			return False
+	except:
+		if (is_int(ele) or is_float(ele)):
+			return True
+		else:
+			return False  # can't be determined
+
 # get the git repo
 def get_git_root(path):
 	git_repo = git.Repo(path, search_parent_directories=True)
