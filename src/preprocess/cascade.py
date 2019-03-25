@@ -165,7 +165,6 @@ class Cascade():
 	def get_existing_user(self,path):
 		df_users = util.readCSV(path)
 		users = util.getUsers(df_users,'ID')
-		print(len(users))
 		return users
 
 	## getting the tweet text and their occurances
