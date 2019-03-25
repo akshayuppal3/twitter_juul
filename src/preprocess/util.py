@@ -35,6 +35,7 @@ logdir = os.path.join(path1, data['logdir'])
 twintDir = os.path.join(path1, data['twintdir'])
 inputdir = os.path.join(path1, data['inputdir'])
 modeldir = os.path.join(path1, data['modeldir'])
+embeddir = os.path.join(path1, inputdir, 'embeddings')
 
 ## logging informaation
 format = "%(asctime)s %(levelname)-8s %(message)s"
