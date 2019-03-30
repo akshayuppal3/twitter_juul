@@ -184,20 +184,20 @@ class Cascade():
 
 if __name__ == '__main__':
 	logging.info("*****************new extraction of cascade process started***********************")
-	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "hexagonData.csv")
+	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "labelled_data", "tweets_predicted.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
 	explored_cascade_path = os.path.join(util.get_git_root(os.getcwd()), "models",'cascade_explored.csv')
 	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
 	cas = Cascade()
 	# get the existing files:
-	existing_users = cas.get_existing_user(explored_cascade_path)
+	# existing_users = cas.get_existing_user(explored_cascade_path) # not using
 	df_tweets = cas.get_unique_tweets(hexagon_data)
 	for i in range(len(df_tweets)):
 		cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 		cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 		cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
 		source_node = cascade.head(1)['userID'].values[0]
-		if (source_node not in set(existing_users)):
+		if (source_node):                                           #if (source_node not in set(existing_users)):
 			logging.info(str("creating cascade for user " + str(source_node)))
 			retweet_count = cascade.head(1)['retweetCount'].values[0]
 			users = set(list(cascade['userID'])) # to remove duplicate entries
