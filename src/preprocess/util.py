@@ -19,6 +19,7 @@ import ast
 from setup import setup_env
 from tqdm import tqdm
 import git
+import networkx as nx
 
 tqdm.pandas()
 
@@ -249,7 +250,6 @@ def getHashtags(tweetObj, extended=False):
 			hashtags = "None"
 	return hashtags
 
-
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info
 def getTweetObject(tweetObj, parentID=None):
@@ -312,3 +312,16 @@ def getTweetObject(tweetObj, parentID=None):
 				'imageurl': tweetObj.user.profile_image_url,
 			}], index=[0])
 	return (data)
+
+
+### building the network
+## @param : following network : columns <userID, following>
+def get_graph(df : pd.DataFrame()) -> nx.DiGraph():
+	G = nx.DiGraph()
+	for user in tqdm(list(df.userID)):
+		following_A = set(ast.literal_eval((df.loc[df.userID == user].head(1)["following"].values)[0])) ## get all of the following of user
+		user_set = set([node for node in list(df.userID) if node != user])
+		users_list = user_set.intersection(following_A)                     # intersect follwoing with the remaining users..
+		for user_followed_by in list(users_list):
+			G.add_edge(user, user_followed_by)
+	return (G)
