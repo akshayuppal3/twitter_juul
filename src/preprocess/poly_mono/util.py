@@ -20,7 +20,7 @@ from setup import setup_env
 from tqdm import tqdm
 import git
 import networkx as nx
-
+from keras.models import model_from_json
 tqdm.pandas()
 
 setup_env()  # download necessary nltk packages
@@ -28,7 +28,7 @@ stopwords = nltk.corpus.stopwords.words('english')
 
 ## loading the config file
 dir_name = os.getcwd()
-path1 = str(Path(os.getcwd()).parent.parent)
+path1 = str(Path(os.getcwd()).parent.parent.parent)
 filepath = posixpath.join(path1, 'config.json')
 with open(filepath) as f:
 	data = json.load(f)
@@ -325,3 +325,20 @@ def get_graph(df : pd.DataFrame()) -> nx.DiGraph():
 		for user_followed_by in list(users_list):
 			G.add_edge(user, user_followed_by)
 	return (G)
+
+## dump the neural model and weights
+def dump_model(model,path):
+	# serialize model to JSON
+	model_json = model.to_json()
+	with open(path, "w") as json_file:
+		json_file.write(model_json)
+	# serialize weights to HDF5
+	model.save_weights("model.h5")
+
+## load the bilstm mode and weights
+def load_model(path):
+	# load json and create model
+	json_file = open(path, 'r')
+	loaded_model_json = json_file.read()
+	json_file.close()
+	loaded_model = model_from_json(loaded_model_json)

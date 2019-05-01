@@ -13,25 +13,26 @@ from keras_contrib.layers import CRF
 from sklearn.metrics import classification_report,confusion_matrix
 
 
-class bilstm:
+class Bilstm:
 
 	## @param  text: text to train the the bilstm model on
 	## @param embeding_path: path for the embedding file
 	def __init__(self,text,embedding_path):
-		self.tokenizer = self.get_tokenizer(text)
-		self.vocab_size = len(self.tokenizer.word_index) + 1
 		self.max_len = 60
-		self.embedding_matrix = self.get_embeding_matrix(embedding_path)
-		self.model = self.get_bilstm_model()
 		self.epoch = 10
 		self.validation_split = 0.25
+		self.tokenizer = self.get_tokenizer(text)
+		self.vocab_size = len(self.tokenizer.word_index) + 1
+		self.embedding_matrix = self.get_embeding_matrix(embedding_path)
+		self.model = self.get_bilstm_model()
+
 
 	def get_tokenizer(self,text):
 		tokenizer = Tokenizer()
 		tokenizer.fit_on_texts(text)
 		return tokenizer
 
-	def get_word2vec(self,file_path):
+	def get_embedding(self,file_path):
 		file = open(file_path, "r")
 		if (file):
 			word2vec = dict()
@@ -49,7 +50,7 @@ class bilstm:
 	def get_embeding_matrix(self,file_path):
 		vocab_size = self.vocab_size
 		tokenizer = self.tokenizer
-		word2vec = self.get_word2vec(file_path)
+		word2vec = self.get_embedding(file_path)
 		embedding_matrix = zeros((vocab_size, 100))
 		for word, i in tokenizer.word_index.items():
 			embedding_vector = word2vec.get(word)

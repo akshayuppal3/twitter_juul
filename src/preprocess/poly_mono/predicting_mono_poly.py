@@ -14,9 +14,16 @@ from gensim.models import Word2Vec
 from preprocess import Preprocess
 from sklearn import preprocessing
 from training import training
+from bilstm_model import Bilstm
 import util
 from tqdm import tqdm
+import numpy as np
 # Suppress warning
+
+embedding_path = os.path.join(util.embeddir,"glove.twitter.27B.100d.txt")
+model_dir = util.modeldir
+model_path = os.path.join(model_dir,"classifier_poly_mono","bilstm.json")
+
 def warn(*args, **kwargs):
 	pass
 
@@ -39,6 +46,7 @@ def w2v_calc(df_input):
 
 def train(w2v,df_lbl):
 	print("\n************")
+	bilstm = Bilstm()
 	print(len(df_lbl))  ## delete
 	print(type(df_lbl))
 	sentences = util.get_sentences(df_lbl, 'tweetText')
@@ -52,8 +60,15 @@ def train(w2v,df_lbl):
 	y = [int(i) for i in y]
 	train = training(X, y)
 	best_model = train.train_baseline()  # it returns a tuple (model,name)
+	bilstm = Bilstm(sentences,embedding_path)
+	bilstm.train(X,y)
 	model = best_model[0]
 	name = best_model[1]
+
+	## dump the bilstm model
+
+	util.dump_model(bilstm,model_path)
+
 	train_model_path = os.path.join(util.modeldir, 'train_model.pkl')
 	with open(train_model_path, "wb") as f:
 		pickle.dump(model, f)
@@ -83,8 +98,15 @@ def predict(w2v,df_input):
 	# get the model from the previous training process
 	train_model_path = os.path.join(util.modeldir, "train_model.pkl")
 	train_model = pickle.load(open(train_model_path, "rb"))
-	train = training(X)
-	y_pred = train.predict(train_model)
+
+	## loading the bilstm model
+	bilsmt_model =  util.load_model(model_path)# load json and create model
+
+	# train = training(X)
+	# y_pred = train.predict(train_model)
+	Y_pred = bilsmt_model.predict(X)
+	y_pred = np.array([np.argmax(pred) for pred in Y_pred])
+
 	## get the no of labelled as 1, 2 and 3
 	print("no of labelled as 3", len(y_pred[y_pred == 3]))
 	print("no of labelled as 2", len(y_pred[y_pred == 2]))
@@ -163,6 +185,7 @@ def main():
 	parser.add_argument("-i",'--inputFile',help="specify the Dataframe file to get(poly/mono) users",required=False)
 	parser.add_argument("-f",'--function',help="specify the option as ( w2v / train / predict/ users)", default='train')  # option for train or prediction
 	args = vars(parser.parse_args())
+
 
 
 	# creating embeddings from the input file
