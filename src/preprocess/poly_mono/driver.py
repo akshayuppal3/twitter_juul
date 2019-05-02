@@ -19,6 +19,7 @@ import util
 from tqdm import tqdm
 import numpy as np
 from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 # Suppress warning
 
 embedding_path = os.path.join(util.embeddir,"glove.twitter.27B.100d.txt")
@@ -97,7 +98,9 @@ class Classify:
 		# y_pred = train.predict(train_model)
 		
 		tokenizer = Tokenizer()
-		X = util.get_encoded_data(list(df_input['tweetText']),tokenizer,60)
+		tokenizer.fit_on_texts(list(df_input['tweetText']))
+		encoded_docs = tokenizer.texts_to_sequences(list(df_input['tweetText']))
+		X = pad_sequences(encoded_docs, maxlen=60, padding='post')
 		Y_pred = bilsmt_model.predict(X)
 		y_pred = np.array([np.argmax(pred) for pred in Y_pred])
 
