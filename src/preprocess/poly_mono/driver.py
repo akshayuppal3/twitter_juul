@@ -50,7 +50,7 @@ class Classify:
 		print(type(df_lbl))
 		sentences = util.get_sentences(df_lbl, 'tweetText')
 		pre = Preprocess(w2v, df_lbl)
-
+		df_lbl = pre.clean_text('tweetText')
 		## getting the features of the labelled data
 		print("getting the features of labelled data")
 		X = pre.get_X(sentences)
@@ -176,7 +176,7 @@ class Classify:
 def main():
 	warnings.warn = warn
 	parser = argparse.ArgumentParser(description="getting the poly and the mono users")
-	parser.add_argument("-a",'--annotated_file',help="specify the annotated Dataframe containing labelled file",required=True)
+	parser.add_argument("-a",'--annotated_file',help="specify the annotated Dataframe containing labelled file",required=False)
 	parser.add_argument("-f",'--function',help="specify the option as ( w2v / train / predict/ users)", default='train')  # option for train or prediction
 	parser.add_argument("-p","--pred_file",help="specify the file to get prediction on ",required=False)
 	args = vars(parser.parse_args())
