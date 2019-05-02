@@ -106,7 +106,8 @@ class Bilstm:
 		print("X_train", X_train.shape)
 		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
-		self.predict(X_train,Y_train)
+		y = self.get_output_data(Y_train)
+		self.predict(X_train,y)
 		self.model = model
 
 	def predict(self,X_test, Y_test):
