@@ -359,5 +359,5 @@ def get_encoded_data(data_,tokenizer,max_len):
 	return data
 
 def pickle_file(data,path):
-	with open(path,"rb") as f:
+	with open(path,"wb") as f:
 		pickle.dump(data,f)
