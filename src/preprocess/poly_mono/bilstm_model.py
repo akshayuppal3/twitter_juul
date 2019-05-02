@@ -116,7 +116,6 @@ class Bilstm:
 		print("training the model")
 		print("Y_train",Y_train.shape)
 		print("X_train", X_train.shape)
-		y = self.get_output_data(Y_train)
 		model.fit(X_train,y,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
 		print("predicting on training data")
