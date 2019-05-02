@@ -5,7 +5,6 @@
 from time import sleep
 import tweepy
 import os
-import pickle
 import argparse
 import pandas as pd
 import pandas.io.common
@@ -23,6 +22,7 @@ import git
 import networkx as nx
 from keras.models import model_from_json
 from keras.preprocessing.sequence import pad_sequences
+import pickle
 tqdm.pandas()
 
 setup_env()  # download necessary nltk packages
@@ -357,3 +357,7 @@ def get_encoded_data(data_,tokenizer,max_len):
 	encoded_docs = tokenizer.texts_to_sequences(data_)
 	data = pad_sequences(encoded_docs,maxlen=max_len,padding='post')
 	return data
+
+def pickle_file(data,path):
+	with open(path,"rb") as f:
+		pickle.dump(data,f)
