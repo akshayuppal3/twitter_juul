@@ -355,7 +355,7 @@ def read_file(path):
 	return df_input
 
 def get_encoded_data(data_,tokenizer,max_len):
-	tokenizer.fit_on_text(data_)
+	tokenizer.fit_on_texts(data_)
 	encoded_docs = tokenizer.texts_to_sequences(data_)
 	data = pad_sequences(encoded_docs,maxlen=max_len,padding='post')
 	return data
