@@ -11,16 +11,18 @@ from keras.models import ( Model, Input, Sequential)
 from keras.layers import (  Dense, Flatten, Embedding, Bidirectional, LSTM , TimeDistributed, Average, Reshape)
 from keras_contrib.layers import CRF
 from sklearn.metrics import classification_report,confusion_matrix
-
+from sklearn.model_selection import train_test_split
 
 class Bilstm:
 
 	## @param  text: text to train the the bilstm model on
 	## @param embeding_path: path for the embedding file
-	def __init__(self,text,embedding_path):
-		self.max_len = 60
+	def __init__(self,text,label,embedding_path):
+		self.max_len = 60  ## average no of words in text (= tweets)
 		self.epoch = 10
 		self.validation_split = 0.25
+		self.text = text
+		self.y = label
 		self.tokenizer = self.get_tokenizer(text)
 		self.vocab_size = len(self.tokenizer.word_index) + 1
 		self.embedding_matrix = self.get_embeding_matrix(embedding_path)
@@ -34,6 +36,7 @@ class Bilstm:
 
 	def get_embedding(self,file_path):
 		file = open(file_path, "r")
+		print("getting the embeddings")
 		if (file):
 			word2vec = dict()
 			split = file.read().splitlines()
@@ -76,10 +79,24 @@ class Bilstm:
 		print(model.summary())
 		return model
 
+	def get_encoded_data(self,data_):
+		encoded_docs = self.tokenizer.texts_to_sequences(data_)
+		data = pad_sequences(encoded_docs,maxlen=self.max_len,padding='post')
+		return data
+
+	def split_data(self):
+		train_data, test_data, Y_train ,Y_test = train_test_split(self.text,self.y, test_size=0.20, random_state=6)
+		X_train = self.get_encoded_data(train_data)
+		X_test = self.get_encoded_data(test_data)
+		return (X_train,X_test,Y_train, Y_test)
+
+
 	def train(self,X_train,Y_train):
 		model = self.model
 		print("training the model")
 		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
+		## printing the trainin scores
+		self.predict(X_train,Y_train)
 		self.model = model
 
 	def predict(self,X_test, Y_test):
