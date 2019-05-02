@@ -55,9 +55,8 @@ class Preprocess:
 	# cleaning the column to remove urls, authors and hashtags
 	def clean_text(self, column):
 		df = self.df
-		if (column in df.columns):
-			tweet_texts = pd.DataFrame(df.column.str.replace(r'(https?://\S+)', ""))  # remove urls
-			tweet_texts = pd.DataFrame(
-				tweet_texts.column.str.replace(r'(\@\w+)', "author"))  # replacing author mentions
-			df = pd.DataFrame(tweet_texts.column.str.replace(r'(\#\w+)', ""))  # removing hashtags
-			return df
+		tweet_texts = pd.DataFrame(df['tweetText'].str.replace(r'(https?://\S+)', ""))  # remove urls
+		tweet_texts = pd.DataFrame(
+			tweet_texts['tweetText'].str.replace(r'(\@\w+)', "author"))  # replacing author mentions
+		df = pd.DataFrame(tweet_texts['tweetText'].str.replace(r'(\#\w+)', ""))  # removing hashtags
+		return df
