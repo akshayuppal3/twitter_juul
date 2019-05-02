@@ -11,3 +11,4 @@ python-git
 gensim
 tqdm
 gitpython
+keras
