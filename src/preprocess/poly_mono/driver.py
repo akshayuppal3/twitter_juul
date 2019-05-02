@@ -39,18 +39,18 @@ def w2v_calc(df_input):
 	model = Word2Vec(sentences_input, size=100, min_count=2)
 	w2v = dict(zip(model.wv.index2word, model.wv.syn0))
 	# dump the w2v embeddings
-	w2v_file = os.path.join(util.modeldir, "w2v.pkl")
+	w2v_file = os.path.join(util.modeldir,"w2v","w2v.pkl")
 	with open(w2v_file, "wb") as f:
 		pickle.dump(w2v, f)
 	print("dumping the w2v model finished")
 
 def train(w2v,df_lbl):
 	print("\n************")
-	bilstm = Bilstm()
 	print(len(df_lbl))  ## delete
 	print(type(df_lbl))
 	sentences = util.get_sentences(df_lbl, 'tweetText')
 	pre = Preprocess(w2v, df_lbl)
+
 	## getting the features of the labelled data
 	print("getting the features of labelled data")
 	X = pre.get_X(sentences)
@@ -60,13 +60,14 @@ def train(w2v,df_lbl):
 	y = [int(i) for i in y]
 	train = training(X, y)
 	best_model = train.train_baseline()  # it returns a tuple (model,name)
+
+	print("training the bilstm model")
 	bilstm = Bilstm(sentences,embedding_path)
 	bilstm.train(X,y)
 	model = best_model[0]
 	name = best_model[1]
 
 	## dump the bilstm model
-
 	util.dump_model(bilstm,model_path)
 
 	train_model_path = os.path.join(util.modeldir, 'train_model.pkl')
@@ -99,6 +100,7 @@ def predict(w2v,df_input):
 	train_model_path = os.path.join(util.modeldir, "train_model.pkl")
 	train_model = pickle.load(open(train_model_path, "rb"))
 
+	print("getting the baselines with bilstm model")
 	## loading the bilstm model
 	bilsmt_model =  util.load_model(model_path)# load json and create model
 
@@ -196,7 +198,7 @@ def main():
 				df_input = pickle.load(open(filename,"rb"))
 			elif filename.endswith('.csv'):
 				df_input = pd.read_csv(filename,lineterminator='\n')  # input data
-			print("generating sentecnes might take some time (5-10min)")
+			print("creating w2v might take some time (5-10min)")
 			w2v_calc(df_input)
 		else:
 			print("specify the input file")
@@ -205,7 +207,7 @@ def main():
 	# training the model
 	elif args['function'] == 'train':
 		# user the labelled file to get classification accuracy with different models
-		w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
+		w2v_filename = os.path.join(util.modeldir,"w2v","w2v.pkl")
 		if (os.path.exists(w2v_filename)):  ## check if embedding exists
 			w2v = pickle.load(open(w2v_filename, "rb"))
 			if (w2v):
@@ -228,17 +230,14 @@ def main():
 			elif input_file_path.endswith('.csv'):
 				print(input_file_path)
 				df_input = pd.read_csv(input_file_path,lineterminator='\n')
-			w2v_filename = os.path.join(util.modeldir + "w2v.pkl")
+			w2v_filename = os.path.join(util.modeldir,"w2v","w2v.pkl")
 			if (os.path.exists(w2v_filename)):  ## check if embedding exists
 				w2v = pickle.load(open(w2v_filename, "rb"))
 				if (w2v):
 					df_input_pred = predict(w2v, df_input)
-
 					poly_mono(df_input_pred)
 					# dump the final full labelled dataset
-					input_labelled_path = os.path.join(util.modeldir,"df_timeline_lbl.pkl")
-					with open(input_labelled_path,"wb") as f:
-						pickle.dump(df_input,f)
+					df_input_pred.to_csv(os.path.join(util.modeldir,"labelled_data.csv"))
 					print("labelled data dumped")
 			else:
 				print("w2v embeddings file does not exist")
