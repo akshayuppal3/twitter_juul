@@ -77,7 +77,7 @@ class Classify:
 
 		## dump the bilstm model
 		print("dumping the bilstm model")
-		util.dump_model(lstm,model_path)
+		util.dump_model(lstm.model,model_path)
 
 		# train_model_path = os.path.join(util.modeldir, 'train_model.pkl')
 		# with open(train_model_path, "wb") as f:
