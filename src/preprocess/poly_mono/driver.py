@@ -62,22 +62,22 @@ class Classify:
 		best_model = train.train_baseline()  # it returns a tuple (model,name)
 
 		print("training the bilstm model")
-		bilstm = Bilstm(sentences,y,embedding_path)
-		self.tokenizer = bilstm.tokenizer
-		self.max_length = bilstm.max_len
+		lstm = Bilstm(sentences,y,embedding_path)
+		self.tokenizer = lstm.tokenizer
+		self.max_length = lstm.max_len
 
-		X_train,X_test,Y_train,Y_test = bilstm.split_data()
-		bilstm.train(X_train,Y_train)
+		X_train,X_test,Y_train,Y_test = lstm.split_data()
+		lstm.train(X_train,Y_train)
 
 		# model = best_model[0]
 		# name = best_model[1]
 
-		print("metrics for the bilstm model")
-		bilstm.predict(X_test,Y_test)
+		print("metrics for the bilstm model (test set)")
+		lstm.predict(X_test,Y_test)
 
 		## dump the bilstm model
 		print("dumping the bilstm model")
-		util.dump_model(bilstm,model_path)
+		util.dump_model(lstm,model_path)
 
 		# train_model_path = os.path.join(util.modeldir, 'train_model.pkl')
 		# with open(train_model_path, "wb") as f:

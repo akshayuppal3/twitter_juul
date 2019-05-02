@@ -98,6 +98,8 @@ class Bilstm:
 		return data
 
 	def split_data(self):
+		self.le.fit(self.y)
+		print("output categories :", self.le.classes_)
 		train_data, test_data, Y_train ,Y_test = train_test_split(self.text,self.y, test_size=0.20, random_state=6)
 		X_train = self.get_encoded_data(train_data)
 		X_test = self.get_encoded_data(test_data)
@@ -106,8 +108,6 @@ class Bilstm:
 		return (X_train,X_test,np.array(Y_train), np.array(Y_test))
 
 	def get_output_data(self,Y):
-		self.le.fit(Y)
-		print("output categories :", self.le.classes_)
 		y = self.le.transform(Y)
 		return y
 	
@@ -116,9 +116,10 @@ class Bilstm:
 		print("training the model")
 		print("Y_train",Y_train.shape)
 		print("X_train", X_train.shape)
-		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
-		## printing the trainin scores
 		y = self.get_output_data(Y_train)
+		model.fit(X_train,y,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
+		## printing the trainin scores
+		print("predicting on training data")
 		self.predict(X_train,y)
 		self.model = model
 
