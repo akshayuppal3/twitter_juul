@@ -18,6 +18,7 @@ from bilstm_model import Bilstm
 import util
 from tqdm import tqdm
 import numpy as np
+from keras.preprocessing.text import Tokenizer
 # Suppress warning
 
 embedding_path = os.path.join(util.embeddir,"glove.twitter.27B.100d.txt")
@@ -29,8 +30,7 @@ def warn(*args, **kwargs):
 	pass
 
 class Classify:
-
-
+	
 	# df_train_lbl is the 500 lablled data
 	# df_timeline_lbl is the labelleing of teh entire input file
 
@@ -63,9 +63,8 @@ class Classify:
 
 		print("training the bilstm model")
 		lstm = Bilstm(sentences,y,embedding_path)
-		self.tokenizer = lstm.tokenizer
-		self.max_length = lstm.max_len
-
+		
+		
 		X_train,X_test,Y_train,Y_test = lstm.split_data()
 		lstm.train(X_train,Y_train)
 
@@ -96,8 +95,9 @@ class Classify:
 
 		# train = training(X)
 		# y_pred = train.predict(train_model)
-
-		X = util.get_encoded_data(list(df_input['tweetText']),self.tokenizer,self.max_length)
+		
+		tokenizer = Tokenizer()
+		X = util.get_encoded_data(list(df_input['tweetText']),tokenizer,60)
 		Y_pred = bilsmt_model.predict(X)
 		y_pred = np.array([np.argmax(pred) for pred in Y_pred])
 
