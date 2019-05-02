@@ -23,7 +23,7 @@ class Bilstm:
 	## @param embeding_path: path for the embedding file
 	def __init__(self,text,label,embedding_path):
 		self.max_len = 60  ## average no of words in text (= tweets)
-		self.epoch = 10
+		self.epoch = 12
 		self.validation_split = 0.25
 		self.text = text
 		self.y = label
@@ -116,10 +116,10 @@ class Bilstm:
 		print("training the model")
 		print("Y_train",Y_train.shape)
 		print("X_train", X_train.shape)
-		model.fit(X_train,y,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
+		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
 		print("predicting on training data")
-		self.predict(X_train,y)
+		self.predict(X_train,Y_train)
 		self.model = model
 
 	def predict(self,X_test, Y_test):

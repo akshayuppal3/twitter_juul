@@ -12,3 +12,4 @@ gensim
 tqdm
 gitpython
 keras
+networkx
