@@ -91,7 +91,7 @@ class Bilstm:
 		train_data, test_data, Y_train ,Y_test = train_test_split(self.text,self.y, test_size=0.20, random_state=6)
 		X_train = self.get_encoded_data(train_data)
 		X_test = self.get_encoded_data(test_data)
-		return (X_train,X_test,Y_train, Y_test)
+		return (X_train,X_test,np.array(Y_train), np.array(Y_test))
 
 	def get_output_data(self,Y):
 		self.le.fit(Y)
@@ -102,7 +102,8 @@ class Bilstm:
 	def train(self,X_train,Y_train):
 		model = self.model
 		print("training the model")
-		print(Y_train.shape)
+		print("Y_train",Y_train.shape)
+		print("X_train", X_train.shape)
 		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
 		self.predict(X_train,Y_train)
