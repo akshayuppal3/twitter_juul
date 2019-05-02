@@ -66,7 +66,7 @@ class Classify:
 		self.tokenizer = bilstm.tokenizer
 		self.max_length = bilstm.max_len
 
-		X_train,Y_train,X_test,Y_test = bilstm.split_data()
+		X_train,X_test,Y_train,Y_test = bilstm.split_data()
 		bilstm.train(X_train,Y_train)
 
 		# model = best_model[0]
