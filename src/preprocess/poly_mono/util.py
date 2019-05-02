@@ -344,6 +344,7 @@ def load_model(path):
 	loaded_model_json = json_file.read()
 	json_file.close()
 	loaded_model = model_from_json(loaded_model_json)
+	return loaded_model
 
 ## file can be .pkl or .csv
 def read_file(path):
