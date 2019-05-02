@@ -43,7 +43,7 @@ class Bilstm:
 	def get_embedding(self,embedding_path):
 		embedding_file = open(embedding_path, "r")
 		print("getting the embeddings")
-		w2v_path = os.path.join(util.modeldir,"embedddings","w2v.pkl")
+		w2v_path = os.path.join(util.modeldir,"embeddings","w2v.pkl")
 		if os.path.exists(w2v_path):
 			word2vec = pickle.load(open(w2v_path, "rb"))
 			return word2vec
@@ -56,7 +56,7 @@ class Bilstm:
 					value = np.array([float(val) for val in line.split(' ')[1:]])
 					word2vec[key] = value
 				print("dumping the w2v file")
-				util.pickle_file(word2vec,os.path.join(util.modeldir,"embedddings","w2v.pkl"))
+				util.pickle_file(word2vec,os.path.join(util.modeldir,"embeddings","w2v.pkl"))
 				return (word2vec)
 			else:
 				print("invalid file path")
@@ -101,6 +101,8 @@ class Bilstm:
 		train_data, test_data, Y_train ,Y_test = train_test_split(self.text,self.y, test_size=0.20, random_state=6)
 		X_train = self.get_encoded_data(train_data)
 		X_test = self.get_encoded_data(test_data)
+		Y_train = self.get_output_data(Y_train)
+		Y_test = self.get_output_data(Y_test)
 		return (X_train,X_test,np.array(Y_train), np.array(Y_test))
 
 	def get_output_data(self,Y):
