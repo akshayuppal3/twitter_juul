@@ -12,6 +12,7 @@ from keras.layers import (  Dense, Flatten, Embedding, Bidirectional, LSTM , Tim
 from keras_contrib.layers import CRF
 from sklearn.metrics import classification_report,confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 class Bilstm:
 
@@ -23,7 +24,9 @@ class Bilstm:
 		self.validation_split = 0.25
 		self.text = text
 		self.y = label
+		self.w2v = self.get_embedding(embedding_path)
 		self.tokenizer = self.get_tokenizer(text)
+		self.le = LabelEncoder()
 		self.vocab_size = len(self.tokenizer.word_index) + 1
 		self.embedding_matrix = self.get_embeding_matrix(embedding_path)
 		self.model = self.get_bilstm_model()
@@ -53,7 +56,7 @@ class Bilstm:
 	def get_embeding_matrix(self,file_path):
 		vocab_size = self.vocab_size
 		tokenizer = self.tokenizer
-		word2vec = self.get_embedding(file_path)
+		word2vec = self.w2v
 		embedding_matrix = zeros((vocab_size, 100))
 		for word, i in tokenizer.word_index.items():
 			embedding_vector = word2vec.get(word)
@@ -90,10 +93,16 @@ class Bilstm:
 		X_test = self.get_encoded_data(test_data)
 		return (X_train,X_test,Y_train, Y_test)
 
-
+	def get_output_data(self,Y):
+		self.le.fit(Y)
+		print("output categories :", self.le.classes_)
+		y = self.le.transform(Y)
+		return y
+	
 	def train(self,X_train,Y_train):
 		model = self.model
 		print("training the model")
+		print(Y_train.shape)
 		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
 		self.predict(X_train,Y_train)
