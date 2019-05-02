@@ -13,6 +13,9 @@ from keras_contrib.layers import CRF
 from sklearn.metrics import classification_report,confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import util
+import os
+import pickle
 
 class Bilstm:
 
@@ -37,19 +40,26 @@ class Bilstm:
 		tokenizer.fit_on_texts(text)
 		return tokenizer
 
-	def get_embedding(self,file_path):
-		file = open(file_path, "r")
+	def get_embedding(self,embedding_path):
+		embedding_file = open(embedding_path, "r")
 		print("getting the embeddings")
-		if (file):
-			word2vec = dict()
-			split = file.read().splitlines()
-			for line in split:
-				key = line.split(' ', 1)[0]  # the first word is the key
-				value = np.array([float(val) for val in line.split(' ')[1:]])
-				word2vec[key] = value
-			return (word2vec)
+		w2v_path = os.path.join(util.modeldir,"embedddings","w2v.pkl")
+		if os.path.exists(w2v_path):
+			word2vec = pickle.load(open(w2v_path, "rb"))
+			return word2vec
 		else:
-			print("invalid file path")
+			if (embedding_file):
+				word2vec = dict()
+				split = embedding_file.read().splitlines()
+				for line in split:
+					key = line.split(' ', 1)[0]  # the first word is the key
+					value = np.array([float(val) for val in line.split(' ')[1:]])
+					word2vec[key] = value
+				print("dumping the w2v file")
+				util.pickle_file(word2vec,os.path.join(util.modeldir,"embedddings","w2v.pkl"))
+				return (word2vec)
+			else:
+				print("invalid file path")
 
 	# @param: filepath: filepath of embedding file
 	# @ return: embedding matrix for the embedding layer
