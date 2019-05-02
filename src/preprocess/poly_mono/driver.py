@@ -223,7 +223,7 @@ def main():
 			df_input_pred = clasify.predict(df_input)
 			clasify.poly_mono(df_input_pred)
 			# dump the final full labelled dataset
-			df_input_pred.to_csv(os.path.join(util.modeldir,"labelled_data.csv"))
+			df_input_pred.to_csv(os.path.join(util.modeldir,"consolidated_data","labelled_data.csv"))
 			print("labelled data dumped")
 		else:
 			print("please specify the file to be predicted (-p)")
