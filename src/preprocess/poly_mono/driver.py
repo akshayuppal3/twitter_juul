@@ -18,6 +18,8 @@ from bilstm_model import Bilstm
 import util
 from tqdm import tqdm
 import numpy as np
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 # Suppress warning
 
 embedding_path = os.path.join(util.embeddir,"glove.twitter.27B.100d.txt")
@@ -29,8 +31,7 @@ def warn(*args, **kwargs):
 	pass
 
 class Classify:
-
-
+	
 	# df_train_lbl is the 500 lablled data
 	# df_timeline_lbl is the labelleing of teh entire input file
 
@@ -50,7 +51,7 @@ class Classify:
 		print(type(df_lbl))
 		sentences = util.get_sentences(df_lbl, 'tweetText')
 		pre = Preprocess(w2v, df_lbl)
-
+		df_lbl = pre.clean_text('tweetText')
 		## getting the features of the labelled data
 		print("getting the features of labelled data")
 		X = pre.get_X(sentences)
@@ -62,22 +63,21 @@ class Classify:
 		best_model = train.train_baseline()  # it returns a tuple (model,name)
 
 		print("training the bilstm model")
-		bilstm = Bilstm(sentences,y,embedding_path)
-		self.tokenizer = bilstm.tokenizer
-		self.max_length = bilstm.max_len
-
-		X_train,Y_train,X_test,Y_test = bilstm.split_data()
-		bilstm.train(X_train,Y_train)
+		lstm = Bilstm(sentences,y,embedding_path)
+		
+		
+		X_train,X_test,Y_train,Y_test = lstm.split_data()
+		lstm.train(X_train,Y_train)
 
 		# model = best_model[0]
 		# name = best_model[1]
 
-		print("metrics for the bilstm model")
-		bilstm.predict(X_test,Y_test)
+		print("metrics for the bilstm model (test set)")
+		lstm.predict(X_test,Y_test)
 
 		## dump the bilstm model
 		print("dumping the bilstm model")
-		util.dump_model(bilstm,model_path)
+		util.dump_model(lstm.model,model_path)
 
 		# train_model_path = os.path.join(util.modeldir, 'train_model.pkl')
 		# with open(train_model_path, "wb") as f:
@@ -96,8 +96,11 @@ class Classify:
 
 		# train = training(X)
 		# y_pred = train.predict(train_model)
-
-		X = util.get_encoded_data(list(df_input['tweetText']),self.tokenizer,self.max_length)
+		
+		tokenizer = Tokenizer()
+		tokenizer.fit_on_texts(list(df_input['tweetText']))
+		encoded_docs = tokenizer.texts_to_sequences(list(df_input['tweetText']))
+		X = pad_sequences(encoded_docs, maxlen=60, padding='post')
 		Y_pred = bilsmt_model.predict(X)
 		y_pred = np.array([np.argmax(pred) for pred in Y_pred])
 
@@ -176,7 +179,7 @@ class Classify:
 def main():
 	warnings.warn = warn
 	parser = argparse.ArgumentParser(description="getting the poly and the mono users")
-	parser.add_argument("-a",'--annotated_file',help="specify the annotated Dataframe containing labelled file",required=True)
+	parser.add_argument("-a",'--annotated_file',help="specify the annotated Dataframe containing labelled file",required=False)
 	parser.add_argument("-f",'--function',help="specify the option as ( w2v / train / predict/ users)", default='train')  # option for train or prediction
 	parser.add_argument("-p","--pred_file",help="specify the file to get prediction on ",required=False)
 	args = vars(parser.parse_args())

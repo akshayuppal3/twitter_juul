@@ -12,6 +12,10 @@ from keras.layers import (  Dense, Flatten, Embedding, Bidirectional, LSTM , Tim
 from keras_contrib.layers import CRF
 from sklearn.metrics import classification_report,confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+import util
+import os
+import pickle
 
 class Bilstm:
 
@@ -19,11 +23,13 @@ class Bilstm:
 	## @param embeding_path: path for the embedding file
 	def __init__(self,text,label,embedding_path):
 		self.max_len = 60  ## average no of words in text (= tweets)
-		self.epoch = 10
+		self.epoch = 12
 		self.validation_split = 0.25
 		self.text = text
 		self.y = label
+		self.w2v = self.get_embedding(embedding_path)
 		self.tokenizer = self.get_tokenizer(text)
+		self.le = LabelEncoder()
 		self.vocab_size = len(self.tokenizer.word_index) + 1
 		self.embedding_matrix = self.get_embeding_matrix(embedding_path)
 		self.model = self.get_bilstm_model()
@@ -34,26 +40,33 @@ class Bilstm:
 		tokenizer.fit_on_texts(text)
 		return tokenizer
 
-	def get_embedding(self,file_path):
-		file = open(file_path, "r")
+	def get_embedding(self,embedding_path):
+		embedding_file = open(embedding_path, "r")
 		print("getting the embeddings")
-		if (file):
-			word2vec = dict()
-			split = file.read().splitlines()
-			for line in split:
-				key = line.split(' ', 1)[0]  # the first word is the key
-				value = np.array([float(val) for val in line.split(' ')[1:]])
-				word2vec[key] = value
-			return (word2vec)
+		w2v_path = os.path.join(util.modeldir,"embeddings","w2v.pkl")
+		if os.path.exists(w2v_path):
+			word2vec = pickle.load(open(w2v_path, "rb"))
+			return word2vec
 		else:
-			print("invalid file path")
+			if (embedding_file):
+				word2vec = dict()
+				split = embedding_file.read().splitlines()
+				for line in split:
+					key = line.split(' ', 1)[0]  # the first word is the key
+					value = np.array([float(val) for val in line.split(' ')[1:]])
+					word2vec[key] = value
+				print("dumping the w2v file")
+				util.pickle_file(word2vec,os.path.join(util.modeldir,"embeddings","w2v.pkl"))
+				return (word2vec)
+			else:
+				print("invalid file path")
 
 	# @param: filepath: filepath of embedding file
 	# @ return: embedding matrix for the embedding layer
 	def get_embeding_matrix(self,file_path):
 		vocab_size = self.vocab_size
 		tokenizer = self.tokenizer
-		word2vec = self.get_embedding(file_path)
+		word2vec = self.w2v
 		embedding_matrix = zeros((vocab_size, 100))
 		for word, i in tokenizer.word_index.items():
 			embedding_vector = word2vec.get(word)
@@ -85,17 +98,27 @@ class Bilstm:
 		return data
 
 	def split_data(self):
+		self.le.fit(self.y)
+		print("output categories :", self.le.classes_)
 		train_data, test_data, Y_train ,Y_test = train_test_split(self.text,self.y, test_size=0.20, random_state=6)
 		X_train = self.get_encoded_data(train_data)
 		X_test = self.get_encoded_data(test_data)
-		return (X_train,X_test,Y_train, Y_test)
+		Y_train = self.get_output_data(Y_train)
+		Y_test = self.get_output_data(Y_test)
+		return (X_train,X_test,np.array(Y_train), np.array(Y_test))
 
-
+	def get_output_data(self,Y):
+		y = self.le.transform(Y)
+		return y
+	
 	def train(self,X_train,Y_train):
 		model = self.model
 		print("training the model")
+		print("Y_train",Y_train.shape)
+		print("X_train", X_train.shape)
 		model.fit(X_train,Y_train,validation_split=self.validation_split,nb_epoch=self.epoch,verbose=2)
 		## printing the trainin scores
+		print("predicting on training data")
 		self.predict(X_train,Y_train)
 		self.model = model
 
