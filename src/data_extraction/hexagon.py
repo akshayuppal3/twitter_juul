@@ -23,7 +23,7 @@ from tqdm import tqdm
 from collections import deque
 # import twintApi as tw
 
-monitorID = "17244489159"  # juulMonitor twitter filter ID (numeric field)
+monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
 # logger = logging.getLogger("logger")
