@@ -320,9 +320,9 @@ if __name__ == '__main__':
 	filenameUserTimeline = args['filenameUserTimeline']
 	if (not df_hex_tweets.empty):
 		# filter the data based on the userID
-		user_path = os.path.join(util.inputdir,"users_list.xlsx")
+		user_path = os.path.join(util.inputdir,"extraction","users_list.csv")
 		if (os.path.exists(user_path)):
-			df_users = util.read_excel(user_path)
+			df_users = util.readCSV(user_path)
 			users = util.getUsers(df_users,"ID")
 			tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename,test_mode=test_mode)   # using twint for friends data
 			ob.output(tweet_data, output_filepath)
