@@ -320,7 +320,7 @@ if __name__ == '__main__':
 	filenameUserTimeline = args['filenameUserTimeline']
 	if (not df_hex_tweets.empty):
 		# filter the data based on the userID
-		user_path = os.path.join(util.inputdir,"extraction","users_list.csv")
+		user_path = os.path.join(util.inputdir,"extraction","user_list_7371.csv")
 		if (os.path.exists(user_path)):
 			df_users = util.readCSV(user_path)
 			users = util.getUsers(df_users,"ID")
