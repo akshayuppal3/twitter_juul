@@ -21,6 +21,7 @@ import datetime
 import ast
 from tqdm import tqdm
 from collections import deque
+from dateutil.relativedelta import relativedelta
 import time
 
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
@@ -97,6 +98,25 @@ class Hexagon:
 		end_dates.append(time.strftime(util.time_format))
 		return  (start_dates,end_dates)
 
+	# returns start and end dates divided in year interval
+	def get_year_range(self,start, end):
+		start_dates = []
+		end_dates = []
+		start_d = datetime.datetime.strptime(start, util.date_format)
+		end_d = datetime.datetime.strptime(end, util.date_format)
+		if (end_d - start_d).days >= 365:                           # splitting interval by each year
+			start_dates.append(start_d.strftime(util.date_format))
+			delta = relativedelta(years=1)
+			new_date = start_d + delta
+			while new_date < end_d:
+				end_dates.append(new_date.strftime(util.date_format))
+				start_dates.append(new_date.strftime(util.date_format))
+				new_date += delta
+			end_dates.append(end_d.strftime(util.date_format))
+			return (start_dates, end_dates)
+		else:
+			return ([start], [end])
+
 	def getEndPoint(self, endpoint):
 		return '{}/{}?'.format(self.baseUrl, endpoint)
 
@@ -138,13 +158,18 @@ class Hexagon:
 			df = df.append(data, ignore_index=True)
 		return df
 
-	# return the volume of data (total Posts Available)
+	# return the totla volume of data (total Posts Available) by summing by each YEAR
 	def checkVolumeData(self, startD, endD):
-		JSON = self.getJsonOb(startD, endD)
-		if JSON:
-			return (JSON['totalPostsAvailable'])
-		else:
-			return 0
+		## sum by year
+		count = 0
+		start_dates,end_dates = self.get_year_range(startD,endD)
+		for start_d,end_d in zip(start_dates,end_dates):
+			print(start_d,end_d)
+			JSON = self.getJsonOb(start_d, end_d)
+			if JSON:
+				count += (JSON['totalPostsAvailable'])
+		print(count)
+		return count
 
 	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data if data found else returns empty dataframe
@@ -192,7 +217,7 @@ class Hexagon:
 			logging.error("[Error] " + e.reason)
 
 	# getting all of the twitter data
-	# @ param : tweet Ids->[List], filename ->[str], user list (list of users, default None)
+	# @ param : hex_tweets ->[List] (tweet IDs), filename ->[str], user list (list of users, default None)
 	def getTwitterData(self, hex_tweets,filename,user_list=None):
 		api_list = self.api
 		apis = deque(api_list)
@@ -251,10 +276,12 @@ if __name__ == '__main__':
 			if (os.path.exists(user_path)):
 				df_users = util.readCSV(user_path)
 				users = util.getUsers(df_users,"ID")
-				tweet_data = ob.getTwitterData(list(set(list(df_hex_tweets['tweetID']))),users,output_filename)   # using unique tweetIds
+				tweetIDs = list(set(list(df_hex_tweets['tweetID'])))  ## selecting unique list of tweet Ids
+				tweet_data = ob.getTwitterData(tweetIDs,output_filename,users)   # using unique tweetIds
 				ob.output(tweet_data, output_filepath)
 		else:
-			tweet_data = ob.getTwitterData(df_hex_tweets,output_filepath)
+			tweetIDs = list(set(list(df_hex_tweets['tweetID'])))  ## selecting unique list of tweet Ids
+			tweet_data = ob.getTwitterData(tweetIDs,output_filepath)
 			ob.output(tweet_data, output_filepath)
 
 	else:

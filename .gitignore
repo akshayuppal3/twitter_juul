@@ -8,8 +8,6 @@ venv
 summary_of_papers
 papers/*
 weekly_reports
-src/data_extraction/authentication.py
-src/preprocess/authentication.py
 *.authentication.py
 keys*
 *.edgelist
