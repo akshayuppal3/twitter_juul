@@ -20,6 +20,8 @@ import datetime
 import ast
 from tqdm import tqdm
 from collections import deque
+import urllib2
+import time
 
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
 
@@ -100,11 +102,14 @@ class Hexagon:
 		return '{}/{}?'.format(self.baseUrl, endpoint)
 
 	def getJsonOb(self,startD,endD):
-		webURL = urllib.request.urlopen(self.getURL(startD,endD))
-		data = webURL.read().decode('utf8')
-		theJSON = json.loads(data)
-		return theJSON
-
+		try:
+			webURL = urllib.request.urlopen(self.getURL(startD,endD))
+			data = webURL.read().decode('utf8')
+			theJSON = json.loads(data)
+			return theJSON
+		except urllib2.HTTPError as e:
+			time.sleep(5)
+			self.getJsonOb(startD,endD)
 
 	def getURL(self,startD,endD):
 		endpoint = self.getEndPoint('posts')
