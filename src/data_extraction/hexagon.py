@@ -8,6 +8,7 @@
 from authentication import Authenticate
 import requests
 import urllib.request
+import urllib.error
 import json
 import pandas as pd
 import util
@@ -20,7 +21,6 @@ import datetime
 import ast
 from tqdm import tqdm
 from collections import deque
-import urllib2
 import time
 
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
@@ -107,7 +107,7 @@ class Hexagon:
 			data = webURL.read().decode('utf8')
 			theJSON = json.loads(data)
 			return theJSON
-		except urllib2.HTTPError as e:
+		except urllib.error.HTTPError as e:
 			time.sleep(5)
 			self.getJsonOb(startD,endD)
 
