@@ -108,6 +108,7 @@ class Hexagon:
 			theJSON = json.loads(data)
 			return theJSON
 		except urllib.error.HTTPError as e:
+			print("here")
 			time.sleep(5)
 			self.getJsonOb(startD,endD)
 
@@ -146,7 +147,8 @@ class Hexagon:
 	# if data > 10000 true else false for the specified range
 	def checkVolumeData(self, startD, endD):
 		JSON = self.getJsonOb(startD, endD)
-		return (JSON['totalPostsAvailable'])
+		if JSON:
+			return (JSON['totalPostsAvailable'])
 
 	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data if data found else returns empty dataframe
