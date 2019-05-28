@@ -6,7 +6,6 @@
 # @Author : Akshay
 
 from authentication import Authenticate
-from TweepyScraping import Twitter
 import requests
 import urllib.request
 import json
@@ -21,7 +20,6 @@ import datetime
 import ast
 from tqdm import tqdm
 from collections import deque
-# import twintApi as tw
 
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
 
@@ -31,14 +29,13 @@ authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
 baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
 class Hexagon:
-	def __init__(self,testMode = False,startDate = util.startDate,endDate = util.endDate):
+	def __init__(self,startDate = util.startDate,endDate = util.endDate):
 		ob = Authenticate()
 		self.authenticateURL = authenticateURL
 		self.authToken = self.getAuthToken()
 		self.baseUrl = baseUrl
 		self.api = ob.api
-		self.hexagonData = self.getHexagonData(startDate, endDate, testMode= testMode)
-
+		self.hexagonData = self.getHexagonData(startDate, endDate,)
 
 	def getAuthToken(self):
 		ob = Authenticate()
@@ -68,19 +65,36 @@ class Hexagon:
 	# responsible for splitting a date range to individual months
 	# @returns start_dates and end_Dates in str format
 	def getDateRange(self,begin,end):
-		dt_start = datetime.datetime.strptime(begin,util.dateFormat)
-		dt_end =  datetime.datetime.strptime(end,util.dateFormat)
+		dt_start = datetime.datetime.strptime(begin, util.date_format)
+		dt_end =  datetime.datetime.strptime(end, util.date_format)
 		one_day = datetime.timedelta(1)
 		start_dates = []
 		end_dates = []
 		today = dt_start
 		while today < dt_end:
 			tomorrow = today + one_day
-			start_dates.append(today.strftime(util.dateFormat))
-			end_dates.append(tomorrow.strftime(util.dateFormat))
+			start_dates.append(today.strftime(util.date_format))
+			end_dates.append(tomorrow.strftime(util.date_format))
 			today = tomorrow
-		end_dates.append(dt_end.strftime(util.dateFormat))
+		end_dates.append(dt_end.strftime(util.date_format))
 		return (start_dates,end_dates)
+
+	# similar date but with Timestamp added to it (eg 2015-01-01T00:10:00)
+	def getTimeRange(self,date):
+		## splitting day by every hour
+		start_dates = []
+		end_dates = []
+		my_date = datetime.datetime.strptime(date, util.date_format)
+		for hour in range(23):
+			time = datetime.datetime.combine(my_date,datetime.time(hour,0))
+			start_dates.append(time.strftime(util.time_format))
+			time =  datetime.datetime.combine(my_date,datetime.time(hour+1,0))
+			end_dates.append(time.strftime(util.time_format))
+		time = datetime.datetime.combine(my_date, datetime.time(23, 0))
+		start_dates.append(time.strftime(util.time_format))
+		time = datetime.datetime.combine(my_date, datetime.time(23, 59, 59))
+		end_dates.append(time.strftime(util.time_format))
+		return  (start_dates,end_dates)
 
 	def getEndPoint(self, endpoint):
 		return '{}/{}?'.format(self.baseUrl, endpoint)
@@ -115,48 +129,50 @@ class Hexagon:
 		)
 		return data
 
-	def getJSONData(self,startD,endD,test_mode= False):
+	def getJSONData(self,startD,endD):
 		JSON = self.getJsonOb(startD, endD)
 		df = pd.DataFrame([])
-		data = JSON['posts'][:util.testLimit] if test_mode == True 	else JSON['posts']
+		data = JSON['posts']
 		for iter in tqdm(data):
 			data = self.getColumnsData(iter)
 			df = df.append(data, ignore_index=True)
 		return df
 
-	# if data > 10000 true else false
+	# if data > 10000 true else false for the specified range
 	def checkVolumeData(self, startD, endD):
 		JSON = self.getJsonOb(startD, endD)
-		if (JSON['totalPostsAvailable'] > 10000):
-			return True
-		else:
-			return False
+		return (JSON['totalPostsAvailable'])
 
 	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data if data found else returns empty dataframe
-	def getHexagonData(self, startD, endD, testMode = False):
+	def getHexagonData(self, startD, endD):
 		logging.info('[INFO] extraction of Hexagon data started')
-		logging.info('[INFO] test mode selected') if testMode == True else None
 		df = pd.DataFrame([])
-		if (self.checkVolumeData(startD,endD)):
+		if (self.checkVolumeData(startD,endD) > 10000):                      ## check if whole_data > 10k
 			print("Data being extracted in batches")
 			logging.info('[INFO] Data being extracted in batches')
-			startDates, endDates = self.getDateRange(startD,endD)
+			startDates, endDates = self.getDateRange(startD,endD)    ## splitting data by per day
 			for startD,endD in tqdm(zip(startDates,endDates), total= len(startDates)):
-				data = self.getJSONData(startD,endD,testMode)
-				df = df.append(data,ignore_index = True)
-		else:
-			df = self.getJSONData(startD,endD,testMode)
+				if (self.checkVolumeData(startD,endD) < 10000):
+					data = self.getJSONData(startD,endD)
+					df = df.append(data,ignore_index = True)
+				else:                                                ## if date per day >= 10k
+					print("checking hourly basis for %s "% startD)
+					logging.info("checking hourly basis for %s "% startD)
+					start_dates,end_dates = self.getTimeRange(startD)## as date is divided per day
+					for startD, endD in tqdm(zip(start_dates, end_dates), total=len(start_dates)):
+						data = self.getJSONData(startD, endD)
+						df = df.append(data, ignore_index=True)
+		else:                                                        ## if whole_data < 10k
+			df = self.getJSONData(startD,endD)
 		logging.info('[INFO] all data extracted from hexagon')
 		if (df.empty):
 			print("No valid data found for the specified date range")
 			logging.info('[INFO] no valid data found for the time range')
-		if test_mode == True:
-			df = df[0:util.testLimit] if (testMode == True) else df   # changes for the test mode
 		print(len(df))
 		return df
 
-	def getBatchTwitter(self,api,tweetIDs, user_list,test_mode=False):
+	def getBatchTwitter(self,api,tweetIDs, user_list):
 		data = pd.DataFrame([])
 		try:
 			user = api.statuses_lookup(tweetIDs,include_entities=True,tweet_mode='extended')  # update as per for full_text
@@ -170,84 +186,8 @@ class Hexagon:
 		except tweepy.TweepError as e:
 			logging.error("[Error] " + e.reason)
 
-	def getFriendBatch(self,friendIds,parent_id,test_mode = False):
-		data = pd.DataFrame([])
-		ob = Twitter()
-		api_list = ob.api
-		apis = deque(api_list)
-		try:
-			apis.rotate(-1)
-			api = apis[0]
-			user = api.lookup_users(friendIds, include_entities=True)  # api to look for user (in batch of 100)
-			for idx, statusObj in enumerate(user):
-				userData = ob.getTweetObject(tweetObj=statusObj, parentID=parent_id, test_mode=test_mode)
-				data = data.append(userData, ignore_index=True)
-			return data
-
-		except tweepy.TweepError as e:
-			logging.error("[Error] " + e.reason)
-
-	# Function to get the friends information
-	def getFriendData(self,df_twitter,test_mode = False):
-		data = pd.DataFrame([])
-		final_data = pd.DataFrame([])
-		if not df_twitter.empty:
-			for parentId,friendList in tqdm(zip(df_twitter.userID,df_twitter.friendList), total= len(df_twitter.userID)):
-				if type(friendList) == str:
-					friends = ast.literal_eval(friendList)  # as the friend list in the dataframe is string
-				else:
-					friends = friendList
-				if len(friends) != 0:
-					friends = friends[0:util.friendLimit]  # limiting the data size as the friends> 1000 are having errors
-					if (len(friends) > 100):
-						batchSize = int(math.ceil(len(friends)/ 100))
-						for i in range(batchSize):
-							dfBat = friends[(100* i) : (100 * (i + 1))]
-							temp = self.getFriendBatch(dfBat,parent_id = parentId ,test_mode = test_mode)
-							data = data.append(temp, ignore_index = True)
-					else:
-						data = self.getFriendBatch(friends,parent_id = parentId, test_mode = test_mode)
-				else:
-					continue        # in case of an empty friends list
-				final_data = final_data.append(data)         #appending all the friends for a user to the record
-			return final_data
-		else:
-			return (pd.DataFrame([]))      #case for empty twitter data
-
-	def getUserTimelineData(self,user,test_mode = False):
-		ob = Twitter()
-		userData = pd.DataFrame([])
-		api_list = ob.api
-		apis = deque(api_list)
-		if user is not None:
-			apis.rotate(-1)
-			api = apis[0]
-			# removing the count
-			# count = util.testLimit if test_mode == True else util.userTimelineLimit
-			try:
-				status = self.api.user_timeline(user, tweet_mode = 'extended')
-				for statusObj in status:
-					data = ob.getTweetObject(statusObj,test_mode=test_mode)
-					userData = userData.append(data)
-				return userData
-
-			except tweepy.TweepError as e:
-				logging.error("[Error] " + e.reason)
-
-	def getuserTimeline(self,df_twitter,test_mode = False):
-		finalData = pd.DataFrame([])
-		if not df_twitter.empty:
-			users = df_twitter.userID.tolist()
-			unique_users = set(users)
-			for user in tqdm(unique_users):
-				userData = self.getUserTimelineData(user,test_mode=test_mode)
-				finalData = finalData.append(userData)
-			return finalData
-		else:
-			return None
-
 	# getting all of the twitter data
-	def getTwitterData(self, df_hex_tweets, user_list,filename,test_mode = False):
+	def getTwitterData(self, df_hex_tweets,filename,user_list=None):
 		api_list = self.api
 		apis = deque(api_list)
 		if filename.endswith('.csv'):
@@ -262,7 +202,7 @@ class Hexagon:
 					api = apis[0]
 					logging.info("[INFO] batch %d started for Twitter data", i )
 					dfBat = df_hex_tweets[(100 * i):(100 * (i + 1))]
-					temp = self.getBatchTwitter(api,dfBat.tweetID.tolist(),user_list,test_mode=test_mode)
+					temp = self.getBatchTwitter(api,dfBat.tweetID.tolist(),user_list)
 					df_twitter = df_twitter.append(temp)
 					if len(df_twitter) >= util.batch_file:
 						file = str(str(filename) + '_' + str(i) + '.csv')
@@ -272,23 +212,12 @@ class Hexagon:
 
 			else:
 				logging.info("[INFO] single batch started for Twitter data")
-				df_twitter = self.getBatchTwitter(df_hex_tweets.tweetID.tolist(),test_mode=test_mode)
+				df_twitter = self.getBatchTwitter(df_hex_tweets.tweetID.tolist())
 			# data.set_index('tweetId')
 			return (df_twitter)
 		else:
 			return (pd.DataFrame())    # Case for a blank dataframe
 
-	def getFriendsDataTwint(self,df):
-		ob = tw.ScrapeTwitter()
-		users = util.getUsers(df,type='ID')
-		if users is not None:
-			df_friends = ob.followingData(users)
-			if not df_friends.empty:
-				return df_friends
-			else:
-				return pd.DataFrame([])
-		else:
-			return pd.DataFrame([])
 
 	def output(self, df, filepath):
 		util.output_to_csv(df, filename=filepath)
@@ -296,54 +225,34 @@ class Hexagon:
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Extracting data from hexagon and twitter API')
-	parser.add_argument('-o', '--friendOption', help='If friend list is required or not', default=False, type=util.str2bool)
-	parser.add_argument('-f', '--filenameTwitter', help = 'specify the name of the output filename to be stored', default="hexagon_extract.csv")
-	parser.add_argument('-f2', '--filenameFriends', help = 'specify the name of the file for following data(friends)', default="friendsData.csv" )
-	parser.add_argument('-f3', '--filenameUserTimeline', help ='specify the name of the file for user timeline', default="userTimelineData.csv")
-	parser.add_argument('-t', '--testMode', help = 'test modde to get only sample data, boolean True or False',type=util.str2bool,default=False)
-	parser.add_argument('-u', '--userOption', help= 'If user timeline for each user needs to be extracted or not',default=False ,type=util.str2bool)
-	parser.add_argument('-s', '--startDate', help = 'Specify the start date/since for extraction (yyyy-mm-dd)', default=util.startDate)
-	parser.add_argument('-e', '--endDate', help = 'Specify the end date (yyyy-mm-dd)', default=datetime.datetime.today().strftime('%Y-%m-%d'))
+	parser.add_argument('-u', '--user_filter',help='filter data for specific users', default=False, type=util.str2bool)
+	parser.add_argument('-f', '--filename_twitter', help = 'specify the name of the output filename to be stored', default="hexagon_extract.csv")
+	parser.add_argument('-s', '--start_date', help = 'Specify the start date/since for extraction (yyyy-mm-dd)', default=util.startDate)
+	parser.add_argument('-e', '--end_date', help = 'Specify the end date (yyyy-mm-dd)', default=datetime.datetime.today().strftime('%Y-%m-%d'))
 	args = vars(parser.parse_args())
-	friendOpt = True if (args['friendOption'] == True) else False
-	userOption = True if (args['userOption'] == True) else False
 	logging.info('[NEW] ---------------------------------------------')
-	logging.info('[INFO] new extraction process started ' + ('with friends option' if friendOpt == True else 'without the friends option'))
-	test_mode = True if (args['testMode'] == True) else False
-	startDate = args['startDate']
-	endDate = args['endDate']
-	ob = Hexagon(test_mode,startDate,endDate)
+	startDate = args['start_date']
+	endDate = args['end_date']
+	ob = Hexagon(startDate,endDate)
 	df_hex_tweets = ob.hexagonData
-	output_filename = args['filenameTwitter']
+	output_filename = args['filename_twitter']
 	output_filepath = os.path.join(util.inputdir,output_filename)
-	filenameFriends = args['filenameFriends']
-	filenameUserTimeline = args['filenameUserTimeline']
 	if (not df_hex_tweets.empty):
 		# filter the data based on the userID
-		user_path = os.path.join(util.inputdir,"extraction","users_list.csv")
-		if (os.path.exists(user_path)):
-			df_users = util.readCSV(user_path)
-			users = util.getUsers(df_users,"ID")
-			tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename,test_mode=test_mode)   # using twint for friends data
+		if args['user_filter']:         # gather data for specific users only
+			user_path = os.path.join(util.inputdir,"extraction","users_list.csv")
+			if (os.path.exists(user_path)):
+				df_users = util.readCSV(user_path)
+				users = util.getUsers(df_users,"ID")
+				tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename)   # using twint for friends data
+				ob.output(tweet_data, output_filepath)
+		else:
+			tweet_data = ob.getTwitterData(df_hex_tweets,output_filepath)
 			ob.output(tweet_data, output_filepath)
-			if friendOpt == True:
-				logging.info("[INFO] extracting friends data")
-				friendsData = ob.getFriendsDataTwint(tweet_data,)
-				ob.output(friendsData, filenameFriends)
-				# friendsData = ob.getFriendData(tweet_data, test_mode=True)
-			if userOption == True:
-				logging.info("[INFO] user timeline extraction started..might take some time")
-				userTimeline = ob.getuserTimeline(tweet_data,test_mode = test_mode)
-				ob.output(userTimeline,filenameUserTimeline)
+
 	else:
 		print("no hexagon data extarcted")
 	logging.info("[INFO] job completed succesfully")
 	print("Job completed")
 
-# if (__name__ == '__main__'):
-# 	main()
-	# ob = Hexagon(False, '2018-09-05',)
-	# df = ob.hexagonData
-	# tweet_data = ob.getTwitterData(df,friendOpt= True)
-	# ob.output(tweet_data,'hexagonDataNew.csv')
 

@@ -1,5 +1,5 @@
 {
-  "logdir" : "output/logging/",
+  "logdir" : "logging/",
   "twintdir" : "output/twintData",
   "inputdir" : "input/",
   "modeldir"  : "models/"
