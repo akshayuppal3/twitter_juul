@@ -26,7 +26,6 @@ import time
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
-# logger = logging.getLogger("logger")
 authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
 baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
@@ -108,7 +107,8 @@ class Hexagon:
 			theJSON = json.loads(data)
 			return theJSON
 		except urllib.error.HTTPError as e:
-			print("here")
+			print("hhtp error raised: ",e.msg)
+			logging.info("http error raised: %s"% e.msg)
 			time.sleep(5)
 			self.getJsonOb(startD,endD)
 
@@ -125,12 +125,6 @@ class Hexagon:
 		data = pd.DataFrame(
 			{
 				'tweetID': hexagonObj['url'].split("status/")[1],
-				'url': hexagonObj['url'],
-				'type': hexagonObj['type'],
-				'title': hexagonObj['title'],
-				'location': hexagonObj['location'] if 'location' in hexagonObj else "",
-				'language': hexagonObj['language']
-				# 'contents' : hexagonObj['contents']      #doesn't seem to have from the API call
 			}, index=[0]
 		)
 		return data
@@ -144,11 +138,13 @@ class Hexagon:
 			df = df.append(data, ignore_index=True)
 		return df
 
-	# if data > 10000 true else false for the specified range
+	# return the volume of data (total Posts Available)
 	def checkVolumeData(self, startD, endD):
 		JSON = self.getJsonOb(startD, endD)
 		if JSON:
 			return (JSON['totalPostsAvailable'])
+		else:
+			return 0
 
 	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data if data found else returns empty dataframe
@@ -179,6 +175,8 @@ class Hexagon:
 		print(len(df))
 		return df
 
+	# @param -> api, tweet Ids , user list
+	# @return-> twiter data
 	def getBatchTwitter(self,api,tweetIDs, user_list):
 		data = pd.DataFrame([])
 		try:
@@ -194,22 +192,23 @@ class Hexagon:
 			logging.error("[Error] " + e.reason)
 
 	# getting all of the twitter data
-	def getTwitterData(self, df_hex_tweets,filename,user_list=None):
+	# @ param : tweet Ids->[List], filename ->[str], user list (list of users, default None)
+	def getTwitterData(self, hex_tweets,filename,user_list=None):
 		api_list = self.api
 		apis = deque(api_list)
 		if filename.endswith('.csv'):
 			filename, _ = filename.split('.csv')
-		if 'tweetID' in df_hex_tweets:
+		if hex_tweets:
 			logging.info('[INFO] extraction started for twitter data')
 			df_twitter = pd.DataFrame([])
-			if (len(df_hex_tweets) > 100):  # to limit the size for api to 100
-				batchSize = int(math.ceil(len(df_hex_tweets) / 100))
+			if (len(hex_tweets) > 100):  # to limit the size for api to 100
+				batchSize = int(math.ceil(len(hex_tweets) / 100))
 				for i in tqdm(range(batchSize)):
 					apis.rotate(-1)
 					api = apis[0]
 					logging.info("[INFO] batch %d started for Twitter data", i )
-					dfBat = df_hex_tweets[(100 * i):(100 * (i + 1))]
-					temp = self.getBatchTwitter(api,dfBat.tweetID.tolist(),user_list)
+					dfBat = hex_tweets[(100 * i):(100 * (i + 1))]
+					temp = self.getBatchTwitter(api,dfBat,user_list)
 					df_twitter = df_twitter.append(temp)
 					if len(df_twitter) >= util.batch_file:
 						file = str(str(filename) + '_' + str(i) + '.csv')
@@ -218,9 +217,10 @@ class Hexagon:
 						df_twitter = pd.DataFrame()
 
 			else:
+				apis.rotate(-1)
+				api = apis[0]
 				logging.info("[INFO] single batch started for Twitter data")
-				df_twitter = self.getBatchTwitter(df_hex_tweets.tweetID.tolist())
-			# data.set_index('tweetId')
+				df_twitter = self.getBatchTwitter(api,hex_tweets,user_list)
 			return (df_twitter)
 		else:
 			return (pd.DataFrame())    # Case for a blank dataframe
@@ -251,7 +251,7 @@ if __name__ == '__main__':
 			if (os.path.exists(user_path)):
 				df_users = util.readCSV(user_path)
 				users = util.getUsers(df_users,"ID")
-				tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename)   # using twint for friends data
+				tweet_data = ob.getTwitterData(list(set(list(df_hex_tweets['tweetID']))),users,output_filename)   # using unique tweetIds
 				ob.output(tweet_data, output_filepath)
 		else:
 			tweet_data = ob.getTwitterData(df_hex_tweets,output_filepath)
