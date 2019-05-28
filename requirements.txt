@@ -13,3 +13,4 @@ tqdm
 gitpython
 keras
 networkx
+pyLDAvis
