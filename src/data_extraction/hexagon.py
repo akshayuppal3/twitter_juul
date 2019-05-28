@@ -21,12 +21,12 @@ import datetime
 import ast
 from tqdm import tqdm
 from collections import deque
+from dateutil.relativedelta import relativedelta
 import time
 
 monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
-# logger = logging.getLogger("logger")
 authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
 baseUrl = "https://api.crimsonhexagon.com/api/monitor"
 
@@ -98,6 +98,25 @@ class Hexagon:
 		end_dates.append(time.strftime(util.time_format))
 		return  (start_dates,end_dates)
 
+	# returns start and end dates divided in year interval
+	def get_year_range(self,start, end):
+		start_dates = []
+		end_dates = []
+		start_d = datetime.datetime.strptime(start, util.date_format)
+		end_d = datetime.datetime.strptime(end, util.date_format)
+		if (end_d - start_d).days >= 365:                           # splitting interval by each year
+			start_dates.append(start_d.strftime(util.date_format))
+			delta = relativedelta(years=1)
+			new_date = start_d + delta
+			while new_date < end_d:
+				end_dates.append(new_date.strftime(util.date_format))
+				start_dates.append(new_date.strftime(util.date_format))
+				new_date += delta
+			end_dates.append(end_d.strftime(util.date_format))
+			return (start_dates, end_dates)
+		else:
+			return ([start], [end])
+
 	def getEndPoint(self, endpoint):
 		return '{}/{}?'.format(self.baseUrl, endpoint)
 
@@ -108,7 +127,8 @@ class Hexagon:
 			theJSON = json.loads(data)
 			return theJSON
 		except urllib.error.HTTPError as e:
-			print("here")
+			print("hhtp error raised: ",e.msg)
+			logging.info("http error raised: %s"% e.msg)
 			time.sleep(5)
 			self.getJsonOb(startD,endD)
 
@@ -125,12 +145,6 @@ class Hexagon:
 		data = pd.DataFrame(
 			{
 				'tweetID': hexagonObj['url'].split("status/")[1],
-				'url': hexagonObj['url'],
-				'type': hexagonObj['type'],
-				'title': hexagonObj['title'],
-				'location': hexagonObj['location'] if 'location' in hexagonObj else "",
-				'language': hexagonObj['language']
-				# 'contents' : hexagonObj['contents']      #doesn't seem to have from the API call
 			}, index=[0]
 		)
 		return data
@@ -144,23 +158,30 @@ class Hexagon:
 			df = df.append(data, ignore_index=True)
 		return df
 
-	# if data > 10000 true else false for the specified range
+	# return the totla volume of data (total Posts Available) by summing by each YEAR
 	def checkVolumeData(self, startD, endD):
-		JSON = self.getJsonOb(startD, endD)
-		if JSON:
-			return (JSON['totalPostsAvailable'])
+		## sum by year
+		count = 0
+		start_dates,end_dates = self.get_year_range(startD,endD)
+		for start_d,end_d in zip(start_dates,end_dates):
+			print(start_d,end_d)
+			JSON = self.getJsonOb(start_d, end_d)
+			if JSON:
+				count += (JSON['totalPostsAvailable'])
+		print(count)
+		return count
 
 	# works for data > 10000 (extract month wise data)
 	# @returns the hexagon data if data found else returns empty dataframe
 	def getHexagonData(self, startD, endD):
 		logging.info('[INFO] extraction of Hexagon data started')
 		df = pd.DataFrame([])
-		if (self.checkVolumeData(startD,endD) > 10000):                      ## check if whole_data > 10k
+		if (self.checkVolumeData(startD,endD) > util.hexagon_limit):                      ## check if whole_data > 10k
 			print("Data being extracted in batches")
 			logging.info('[INFO] Data being extracted in batches')
 			startDates, endDates = self.getDateRange(startD,endD)    ## splitting data by per day
 			for startD,endD in tqdm(zip(startDates,endDates), total= len(startDates)):
-				if (self.checkVolumeData(startD,endD) < 10000):
+				if (self.checkVolumeData(startD,endD) < util.hexagon_limit):
 					data = self.getJSONData(startD,endD)
 					df = df.append(data,ignore_index = True)
 				else:                                                ## if date per day >= 10k
@@ -179,6 +200,8 @@ class Hexagon:
 		print(len(df))
 		return df
 
+	# @param -> api, tweet Ids , user list
+	# @return-> twiter data
 	def getBatchTwitter(self,api,tweetIDs, user_list):
 		data = pd.DataFrame([])
 		try:
@@ -194,22 +217,23 @@ class Hexagon:
 			logging.error("[Error] " + e.reason)
 
 	# getting all of the twitter data
-	def getTwitterData(self, df_hex_tweets,filename,user_list=None):
+	# @ param : hex_tweets ->[List] (tweet IDs), filename ->[str], user list (list of users, default None)
+	def getTwitterData(self, hex_tweets,filename,user_list=None):
 		api_list = self.api
 		apis = deque(api_list)
 		if filename.endswith('.csv'):
 			filename, _ = filename.split('.csv')
-		if 'tweetID' in df_hex_tweets:
+		if hex_tweets:
 			logging.info('[INFO] extraction started for twitter data')
 			df_twitter = pd.DataFrame([])
-			if (len(df_hex_tweets) > 100):  # to limit the size for api to 100
-				batchSize = int(math.ceil(len(df_hex_tweets) / 100))
+			if (len(hex_tweets) > 100):  # to limit the size for api to 100
+				batchSize = int(math.ceil(len(hex_tweets) / 100))
 				for i in tqdm(range(batchSize)):
 					apis.rotate(-1)
 					api = apis[0]
 					logging.info("[INFO] batch %d started for Twitter data", i )
-					dfBat = df_hex_tweets[(100 * i):(100 * (i + 1))]
-					temp = self.getBatchTwitter(api,dfBat.tweetID.tolist(),user_list)
+					dfBat = hex_tweets[(100 * i):(100 * (i + 1))]
+					temp = self.getBatchTwitter(api,dfBat,user_list)
 					df_twitter = df_twitter.append(temp)
 					if len(df_twitter) >= util.batch_file:
 						file = str(str(filename) + '_' + str(i) + '.csv')
@@ -218,9 +242,10 @@ class Hexagon:
 						df_twitter = pd.DataFrame()
 
 			else:
+				apis.rotate(-1)
+				api = apis[0]
 				logging.info("[INFO] single batch started for Twitter data")
-				df_twitter = self.getBatchTwitter(df_hex_tweets.tweetID.tolist())
-			# data.set_index('tweetId')
+				df_twitter = self.getBatchTwitter(api,hex_tweets,user_list)
 			return (df_twitter)
 		else:
 			return (pd.DataFrame())    # Case for a blank dataframe
@@ -251,10 +276,12 @@ if __name__ == '__main__':
 			if (os.path.exists(user_path)):
 				df_users = util.readCSV(user_path)
 				users = util.getUsers(df_users,"ID")
-				tweet_data = ob.getTwitterData(df_hex_tweets,users,output_filename)   # using twint for friends data
+				tweetIDs = list(set(list(df_hex_tweets['tweetID'])))  ## selecting unique list of tweet Ids
+				tweet_data = ob.getTwitterData(tweetIDs,output_filename,users)   # using unique tweetIds
 				ob.output(tweet_data, output_filepath)
 		else:
-			tweet_data = ob.getTwitterData(df_hex_tweets,output_filepath)
+			tweetIDs = list(set(list(df_hex_tweets['tweetID'])))  ## selecting unique list of tweet Ids
+			tweet_data = ob.getTwitterData(tweetIDs,output_filepath)
 			ob.output(tweet_data, output_filepath)
 
 	else:

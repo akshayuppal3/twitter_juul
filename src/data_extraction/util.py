@@ -37,6 +37,7 @@ date_format = "%Y-%m-%d"
 time_format = "%Y-%m-%dT%H:%M:%S"
 testLimit = 5
 batch_file = 10000
+hexagon_limit = 10000
 startDate = '2014-01-01'
 endDate = '2014-01-12'
 
