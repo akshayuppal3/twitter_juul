@@ -33,7 +33,8 @@ modeldir = os.path.join(path1, data['modeldir'])
 
 ## logging informaation
 format = "%(asctime)s %(levelname)-8s %(message)s"
-dateFormat = "%Y-%m-%d"
+date_format = "%Y-%m-%d"
+time_format = "%Y-%m-%dT%H:%M:%S"
 testLimit = 5
 batch_file = 10000
 startDate = '2014-01-01'
@@ -53,7 +54,7 @@ def output_to_csv(df, filename):
 
 # conversion of str to bool
 def str2bool(v):
-	if v.lower() in ('train', 't', 't', 'y', '1'):
+	if v.lower() in ('true', 't', 't', 'y', '1'):
 		return True
 	elif v.lower() in ('no', 'false', 'f', 'n', '0'):
 		return False
@@ -211,69 +212,45 @@ def getHashtags(tweetObj, extended=False):
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info
-def getTweetObject(tweetObj,user_list, parentID=None):
+def getTweetObject(tweetObj,user_list):
 	if tweetObj is not None:
-		if (int(tweetObj.user.id) in set(user_list)):
-			if parentID is not None:
-				data = pd.DataFrame.from_records(
-					[{
-						'userID': tweetObj.id,
-						'parentID': parentID,
-						'userName': tweetObj.name,
-						'userDescription': tweetObj.description,
-						'userCreatedAt': tweetObj.created_at,
-						'userLocation': tweetObj.location,
-						'favourites_count': tweetObj.favourites_count,
-						'friendsCount': tweetObj.friends_count,
-						'userFollowersCount': tweetObj.followers_count,
-						'listedCount': tweetObj.listed_count,
-						'lang': tweetObj.lang,
-						'url': tweetObj.url,
-						'imageurl': tweetObj.profile_image_url,
-						'userVerified': tweetObj.verified,
-						'isProtected': tweetObj.protected,
-						'notifications': tweetObj.notifications,
-						'statusesCount': tweetObj.statuses_count,
-						'geoEnabled': tweetObj.geo_enabled,
-						'contributorEnabled': tweetObj.contributors_enabled,
-						# 'status': tweetObj.status,
-						'withheldinCountries': tweetObj.withheld_in_countries if 'withheld_in_countries' in tweetObj._json.keys() else None,
-						'withheldScope': tweetObj.withheld_scope if 'withheld_scope' in tweetObj._json.keys() else None,
-					}], index=[0])
+		if 'retweeted_status' in tweetObj._json.keys():
+			retweetText = tweetObj.retweeted_status.full_text.replace("\n", " ")
+			text = tweetObj.full_text.replace("\n", " ")
+			hashtags = getHashtags(tweetObj, extended=True)  # for retweeted status
+			retweeted = True
+		else:
+			text = tweetObj.full_text.replace("\n", " ")
+			retweetText = None
+			hashtags = getHashtags(tweetObj)
+			retweeted = False
+		data = pd.DataFrame.from_records(
+			[{
+				'tweetId': tweetObj.id_str,
+				'tweetText': text,
+				'retweetText': retweetText,
+				'retweetCount': tweetObj.retweet_count,
+				'retweeted': retweeted,
+				'tweetCreatedAt': tweetObj.created_at,
+				'lang': tweetObj.lang,
+				'hashtags': hashtags,
+				'userName': tweetObj.user.name,
+				'userID': tweetObj.user.id,
+				'favourites_count': tweetObj.user.favourites_count,
+				'userCreatedAt': tweetObj.user.created_at,
+				'userLocation': tweetObj.user.location,
+				'userDescription': tweetObj.user.description.replace("\n", " "),
+				'friendsCount': tweetObj.user.friends_count,
+				'followersCount': tweetObj.user.followers_count,
+				'listedCount': tweetObj.user.listed_count,
+				'url': tweetObj.user.url,
+				'imageurl': tweetObj.user.profile_image_url,
+				'statusesCount': tweetObj.user.statuses_count,
+			}], index=[0])
+		if user_list is not None:                              ## check for user filter
+			if (int(tweetObj.user.id) in set(user_list)):
 				return data
 			else:
-				if 'retweeted_status' in tweetObj._json.keys():
-					retweetText = tweetObj.retweeted_status.full_text.replace("\n", " ")
-					text = tweetObj.full_text.replace("\n", " ")
-					hashtags = getHashtags(tweetObj, extended=True)  # for retweeted status
-					retweeted = True
-				else:
-					text = tweetObj.full_text.replace("\n", " ")
-					retweetText = None
-					hashtags = getHashtags(tweetObj)
-					retweeted = False
-				data = pd.DataFrame.from_records(
-					[{
-						'tweetId': tweetObj.id_str,
-						'tweetText': text,
-						'retweetText': retweetText,
-						'retweetCount': tweetObj.retweet_count,
-						'retweeted': retweeted,
-						'tweetCreatedAt': tweetObj.created_at,
-						'userName': tweetObj.user.name,
-						'userID': tweetObj.user.id,
-						'favourites_count': tweetObj.user.favourites_count,
-						'userCreatedAt': tweetObj.user.created_at,
-						'userLocation': tweetObj.user.location,
-						'userDescription': tweetObj.user.description.replace("\n", " "),
-						'friendsCount': tweetObj.user.friends_count,
-						'followersCount': tweetObj.user.followers_count,
-						'listedCount': tweetObj.user.listed_count,
-						'lang': tweetObj.lang,
-						'hashtags': hashtags,
-						'url': tweetObj.user.url,
-						'imageurl': tweetObj.user.profile_image_url,
-					}], index=[0])
-				return data
+				return pd.DataFrame()
 		else:
-			return pd.DataFrame()
+			return data
