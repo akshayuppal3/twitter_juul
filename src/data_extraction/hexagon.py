@@ -176,12 +176,12 @@ class Hexagon:
 	def getHexagonData(self, startD, endD):
 		logging.info('[INFO] extraction of Hexagon data started')
 		df = pd.DataFrame([])
-		if (self.checkVolumeData(startD,endD) > 10000):                      ## check if whole_data > 10k
+		if (self.checkVolumeData(startD,endD) > util.hexagon_limit):                      ## check if whole_data > 10k
 			print("Data being extracted in batches")
 			logging.info('[INFO] Data being extracted in batches')
 			startDates, endDates = self.getDateRange(startD,endD)    ## splitting data by per day
 			for startD,endD in tqdm(zip(startDates,endDates), total= len(startDates)):
-				if (self.checkVolumeData(startD,endD) < 10000):
+				if (self.checkVolumeData(startD,endD) < util.hexagon_limit):
 					data = self.getJSONData(startD,endD)
 					df = df.append(data,ignore_index = True)
 				else:                                                ## if date per day >= 10k
