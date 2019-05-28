@@ -130,7 +130,9 @@ class Hexagon:
 			print("hhtp error raised: ",e.msg)
 			logging.info("http error raised: %s"% e.msg)
 			time.sleep(5)
-			self.getJsonOb(startD,endD)
+			JSON = self.getJsonOb(startD,endD)
+			print("resolved error: ", e.msg, " sleeping for 5")
+			return JSON
 
 	def getURL(self,startD,endD):
 		endpoint = self.getEndPoint('posts')
