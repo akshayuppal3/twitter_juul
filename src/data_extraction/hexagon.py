@@ -81,6 +81,7 @@ class Hexagon:
 		end_dates.append(dt_end.strftime(util.date_format))
 		return (start_dates,end_dates)
 
+	# !! Depcprecated
 	# similar date but with Timestamp added to it (eg 2015-01-01T00:10:00)
 	def getTimeRange(self,date):
 		## splitting day by every hour
@@ -166,11 +167,11 @@ class Hexagon:
 		count = 0
 		start_dates,end_dates = self.get_year_range(startD,endD)
 		for start_d,end_d in zip(start_dates,end_dates):
-			print(start_d,end_d)
 			JSON = self.getJsonOb(start_d, end_d)
 			if JSON:
 				count += (JSON['totalPostsAvailable'])
-		print(count)
+		print("total valume of data",count)
+		logging.info("total volume of data %d" % count)
 		return count
 
 	# works for data > 10000 (extract month wise data)
@@ -183,23 +184,16 @@ class Hexagon:
 			logging.info('[INFO] Data being extracted in batches')
 			startDates, endDates = self.getDateRange(startD,endD)    ## splitting data by per day
 			for startD,endD in tqdm(zip(startDates,endDates), total= len(startDates)):
-				if (self.checkVolumeData(startD,endD) < util.hexagon_limit):
-					data = self.getJSONData(startD,endD)
-					df = df.append(data,ignore_index = True)
-				else:                                                ## if date per day >= 10k
-					print("checking hourly basis for %s "% startD)
-					logging.info("checking hourly basis for %s "% startD)
-					start_dates,end_dates = self.getTimeRange(startD)## as date is divided per day
-					for startD, endD in tqdm(zip(start_dates, end_dates), total=len(start_dates)):
-						data = self.getJSONData(startD, endD)
-						df = df.append(data, ignore_index=True)
+				data = self.getJSONData(startD,endD)
+				df = df.append(data,ignore_index = True)
 		else:                                                        ## if whole_data < 10k
 			df = self.getJSONData(startD,endD)
 		logging.info('[INFO] all data extracted from hexagon')
 		if (df.empty):
 			print("No valid data found for the specified date range")
 			logging.info('[INFO] no valid data found for the time range')
-		print(len(df))
+		print("length of the data",len(df))
+		logging.info("length of hexagon extracted data %d" % len(df))
 		return df
 
 	# @param -> api, tweet Ids , user list
