@@ -85,5 +85,5 @@ if __name__ == '__main__':
     print("extraction of user handles started")
     user_ids = list(df_hexagon_new.userID.unique())
     user_handles = extract_users(user_ids)
-    # user_handles.to_csv(os.path.join(input_dir,"user_handles.csv"),index=False)
+    user_handles.to_csv(os.path.join(input_dir,"user_handles.csv"),index=False)
 
