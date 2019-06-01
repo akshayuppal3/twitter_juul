@@ -24,7 +24,7 @@ from collections import deque
 from dateutil.relativedelta import relativedelta
 import time
 
-monitorID = "9925794735"  # juulMonitor twitter filter ID (numeric field)
+monitorID = "20373925604"  # juulMonitor twitter filter ID (numeric field)
 
 logging.basicConfig(level="INFO", format= util.format, filename=(util.logdir + "/hexagonScrapingLogs.log"))
 authenticateURL = "https://api.crimsonhexagon.com/api/authenticate"
