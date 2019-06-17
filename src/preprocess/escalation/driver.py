@@ -11,14 +11,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from tqdm import tqdm
 from xgboost import XGBClassifier
-
 import lstm
 import util
 
-embeddings_dir = util.embeddir
+embeddings_dir = util.embeddings_dir
 embedding_file = os.path.join(embeddings_dir, "glove.twitter.27B.100d.txt")
 
-
+## @return data, X, y, embedding_matrix, max_len, vocalb
 def prepare_data_lstm(df, users_labelled):
 	dimension = 100
 	
@@ -89,8 +88,8 @@ def prepare_data_lstm(df, users_labelled):
 	
 	return (data, X, y, embedding_matrix, max_len, vocab_size)
 
-
-def run_lstm_model(X, y, embedding_matrix, max_len, vocab_size, dimension, epoch, metrics, weights=None):
+## run lstm model
+def run_lstm_model(X, y, embedding_matrix, max_len, vocab_size, dimension, epoch, metrics=lstm.Metrics(), weights=None):
 	## split the data
 	print("train-test split")
 	X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.20, random_state=4, shuffle=True, stratify=y)
@@ -102,7 +101,7 @@ def run_lstm_model(X, y, embedding_matrix, max_len, vocab_size, dimension, epoch
 	print("X-test", X_test.shape)
 	
 	print("creating lstm model")
-	model = util.get_lstm_model(max_len, vocab_size, dimension, embedding_matrix)
+	model = lstm.get_lstm_model(max_len, vocab_size, dimension, embedding_matrix)
 	
 	print("training the model with balance dataset")
 	
@@ -124,8 +123,8 @@ def run_lstm_model(X, y, embedding_matrix, max_len, vocab_size, dimension, epoch
 	print("job finished")
 	return (model, f1_score)
 
-
-def run_baslines(df, users_labelled):
+## @returns tfidf vectorized data
+def prepare_data_tfidf(df, users_labelled):
 	tqdm.pandas()
 	df["tweetText"] = df["tweetText"].progress_apply(util.clean_text)
 	df["tweetText"] = df["tweetText"].progress_apply(util.get_tokens).str.join(" ")
@@ -148,6 +147,11 @@ def run_baslines(df, users_labelled):
 	
 	X_train, X_test, Y_train, Y_test = train_test_split(X_sam, y_sam, test_size=0.20, random_state=4, shuffle=True,
 	                                                    stratify=y_sam)
+	return ((X_train, Y_train, X_test, Y_test), tf_idf)
+
+
+## @ return scores from baseline models
+def get_baseline_scores(X_train, Y_train, X_test, Y_test):
 	print("training the models")
 	print("svm")
 	svm = LinearSVC(C=1, verbose=1)
@@ -188,6 +192,7 @@ def run_baslines(df, users_labelled):
 		'rf': [rf, rf_score],
 		'xg_boost': [xgb, xgb_score],
 		'maj': [maj_score],
-		'tf-idf': tf_idf,
+		# 'tf-idf': tf_idf,
 	}
 	return (final)
+
