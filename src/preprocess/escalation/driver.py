@@ -10,12 +10,12 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from tqdm import tqdm
-from xgboost import XGBClassifier
+# from xgboost import XGBClassifier  @TODO remove afterwards
 
 import lstm
 import util
 
-embeddings_dir = util.embeddir
+embeddings_dir = util.embeddings_dir
 embedding_file = os.path.join(embeddings_dir, "glove.twitter.27B.100d.txt")
 
 
@@ -191,3 +191,76 @@ def run_baslines(df, users_labelled):
 		'tf-idf': tf_idf,
 	}
 	return (final)
+
+
+## @ return scores from baseline models
+def get_baseline_scores(X_train, Y_train, X_test, Y_test):
+	print("training the models")
+	print("svm")
+	svm = LinearSVC(C=1, verbose=1)
+	svm.fit(X_train, Y_train)
+	
+	print("rf")
+	rf = RandomForestClassifier(n_estimators=100, max_depth=2,
+	                            random_state=0)
+	rf.fit(X_train, Y_train)
+	
+	# print("xgBoost")
+	# xgb = XGBClassifier()
+	# xgb.fit(X_train, Y_train)
+	
+	print("predicting scores")
+	print("svm")
+	y_pred = svm.predict(X_test)
+	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
+	svm_score = (util.get_f1(Y_test, y_pred))
+	
+	print("random_forest")
+	y_pred = rf.predict(X_test)
+	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
+	rf_score = (util.get_f1(Y_test, y_pred))
+	
+	print("xgboost")
+	# y_pred = xgb.predict(X_test)
+	# print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
+	# xgb_score = (get_f1(Y_test, y_pred))
+	
+	y_pred = [1 for x in range(len(Y_test))]
+	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
+	maj_score = (util.get_f1(Y_test, y_pred))
+	
+	print("job finished")
+	final = {
+		'svm': [svm, svm_score],
+		'rf': [rf, rf_score],
+		# 'xg_boost': [xgb, xgb_score],
+		'maj': [maj_score],
+		# 'tf-idf': tf_idf,
+	}
+	return (final)
+
+
+def prepare_data_tfidf(df, users_labelled):
+	tqdm.pandas()
+	df["tweetText"] = df["tweetText"].progress_apply(clean_text)
+	df["tweetText"] = df["tweetText"].progress_apply(get_tokens).str.join(" ")
+	data = df.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
+	data = data.join(users_labelled.set_index("userID"), on="userID", how="inner")
+	# ## prepare the tokenizer
+	print("preparing the tokenizer")
+	tf_idf = TfidfVectorizer(sublinear_tf=True)
+	tf_idf.fit(data["tweetText"])
+	X = tf_idf.fit_transform(data["tweetText"])
+	y = np.array(list(data["label"]))
+	
+	print("downsampling")
+	rus = RandomUnderSampler(random_state=0)
+	rus.fit(X, y)
+	X_sam, y_sam = rus.fit_sample(X, y)
+	
+	print("downsampled data length", (X_sam.shape))
+	print("train-test split")
+	
+	X_train, X_test, Y_train, Y_test = train_test_split(X_sam, y_sam, test_size=0.20, random_state=4, shuffle=True,
+	                                                    stratify=y_sam)
+	return ((X_train, Y_train, X_test, Y_test),tf_idf)

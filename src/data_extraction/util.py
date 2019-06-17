@@ -2,22 +2,25 @@
 ##Class containing##
 # helper functions###
 ####################
-from time import sleep
-import tweepy
-import os
 import argparse
+import ast
+import json
+import os
+import posixpath
+from pathlib import Path
+from time import sleep
+
+import networkx as nx
+import nltk
+import numpy as np
 import pandas as pd
 import pandas.io.common
-from pathlib import Path
-import json
+import tweepy
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import IllegalCharacterError
-import posixpath
-import numpy as np
-import nltk
-import ast
 # from setup import setup_env
 from tqdm import tqdm
+
 tqdm.pandas()
 
 ## loading the config file
@@ -210,6 +213,19 @@ def getHashtags(tweetObj, extended=False):
 		else:
 			hashtags = "None"
 	return hashtags
+
+
+### building the network
+def get_graph(df)-> nx.DiGraph():
+	G = nx.DiGraph()
+	users = list(df.userID.unique())
+	for user in tqdm(users):
+		following_A = set(ast.literal_eval((df.loc[df.userID == user].head(1)["following"].values)[0]))
+		user_set = set([node for node in users if node != user])
+		users_list = user_set.intersection(following_A)
+		for user_following in list(users_list):
+			G.add_edge(user, user_following)
+	return G
 
 # @params passing tweet, friendOpt and userinfo(in case of following)
 # returns data frame of tweet and user info

@@ -70,8 +70,8 @@ def clean_text(text):
 	text = re.sub(r'(#)', "", text)  ## removing the hashtags signal
 	text = re.sub(r'(RT )', "", text)  ## remove the retweet info as they dont convey any information
 	text = re.sub(r'(^:)', "", text)
-	text = text.rstrip
-	text = text.lstrip
+	text = text.rstrip()
+	text = text.lstrip()
 	return (text)
 
 
