@@ -1,16 +1,20 @@
 import os
-
-import git
-import pandas as pd
-
-pd.set_option('display.max_colwidth', -1)
 import warnings
-
-warnings.filterwarnings('ignore')
+import git
 import numpy as np
 import re
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_fscore_support
+from nltk.corpus import wordnet as wn
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import TweetTokenizer
+
+tweet_tknzr = TweetTokenizer()
+warnings.filterwarnings('ignore')
+nltk.download('wordnet')
+nltk.download('stopwords')
+stopwords = set(stopwords.words('english'))
 
 
 ## Read the labelled files and the poly_user
@@ -20,6 +24,7 @@ def get_git_root(path):
 	return git_root
 
 
+## preparing all of the directories
 top_dir = os.path.join(get_git_root(os.getcwd()))
 input_dir = os.path.join(get_git_root(os.getcwd()), "input")
 embeddings_dir = os.path.join(get_git_root(os.getcwd()), "input", "embeddings")
@@ -32,6 +37,23 @@ poly_dir = os.path.join(model_dir, "poly_users")
 def get_length(s):
 	a = list(s.split())
 	return (len(a))
+
+
+def get_lemma(word):
+	lemma = wn.morphy(word)
+	if lemma is None:
+		return word
+	else:
+		return lemma
+
+
+def get_tokens(sentence):
+	#     tokens = nltk.word_tokenize(sentence)  # now using tweet tokenizer
+	tokens = tweet_tknzr.tokenize(sentence)
+	tokens = [token.lower() for token in tokens]
+	tokens = [token for token in tokens if (token not in stopwords and len(token) > 1)]  ## remove punctuations
+	tokens = [get_lemma(token) for token in tokens]
+	return (tokens)
 
 
 def get_window_size(df):
@@ -111,13 +133,3 @@ def get_embedding_matrix(vocab_size, dimension, embedding_file, keras_tkzr):
 		if embedding_vector is not None:
 			embedding_matrix[i] = embedding_vector
 	return embedding_matrix
-
-
-def get_embedding_matrix(keras_tkzr, word2vec):
-	vocab_size = len(keras_tkzr.word_index) + 1
-	embedding_matrix = zeros((vocab_size, 100))
-	for word, i in keras_tkzr.word_index.items():
-		embedding_vector = word2vec.get(word)
-		if embedding_vector is not None:
-			embedding_matrix[i] = embedding_vector
-	return (embedding_matrix, vocab_size)
