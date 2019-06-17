@@ -10,8 +10,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from tqdm import tqdm
-# from xgboost import XGBClassifier  @TODO remove afterwards
-
+from xgboost import XGBClassifier
 import lstm
 import util
 
@@ -163,9 +162,9 @@ def get_baseline_scores(X_train, Y_train, X_test, Y_test):
 	                            random_state=0)
 	rf.fit(X_train, Y_train)
 	
-	# print("xgBoost")
-	# xgb = XGBClassifier()
-	# xgb.fit(X_train, Y_train)
+	print("xgBoost")
+	xgb = XGBClassifier()
+	xgb.fit(X_train, Y_train)
 	
 	print("predicting scores")
 	print("svm")
@@ -179,9 +178,9 @@ def get_baseline_scores(X_train, Y_train, X_test, Y_test):
 	rf_score = (util.get_f1(Y_test, y_pred))
 	
 	print("xgboost")
-	# y_pred = xgb.predict(X_test)
-	# print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	# xgb_score = (get_f1(Y_test, y_pred))
+	y_pred = xgb.predict(X_test)
+	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
+	xgb_score = (util.get_f1(Y_test, y_pred))
 	
 	y_pred = [1 for x in range(len(Y_test))]
 	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
@@ -191,7 +190,7 @@ def get_baseline_scores(X_train, Y_train, X_test, Y_test):
 	final = {
 		'svm': [svm, svm_score],
 		'rf': [rf, rf_score],
-		# 'xg_boost': [xgb, xgb_score],
+		'xg_boost': [xgb, xgb_score],
 		'maj': [maj_score],
 		# 'tf-idf': tf_idf,
 	}
