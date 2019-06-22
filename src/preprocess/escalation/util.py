@@ -1,14 +1,15 @@
 import os
-import warnings
-import git
-import numpy as np
 import re
-from tqdm import tqdm
-from sklearn.metrics import precision_recall_fscore_support
-from nltk.corpus import wordnet as wn
+import warnings
+
+import git
 import nltk
+import numpy as np
 from nltk.corpus import stopwords
+from nltk.corpus import wordnet as wn
 from nltk.tokenize import TweetTokenizer
+from sklearn.metrics import precision_recall_fscore_support
+from tqdm import tqdm
 
 tweet_tknzr = TweetTokenizer()
 warnings.filterwarnings('ignore')
@@ -123,6 +124,17 @@ def get_word2vec(file_path):
 		print("invalid fiel path")
 
 
+## creating X(input array for Kmeans) based on word2vec dimesnions
+def get_word2vec_array(model):
+	w2v = dict()
+	vectors = []
+	for ele in (model.wv.vocab):
+		w2v[ele] = (model.wv[ele])
+		vectors.append(model.wv[ele])
+	X = np.array(vectors)
+	return X
+
+
 ## returns the emnbedding matrix for the lstm model
 def get_embedding_matrix(vocab_size, dimension, embedding_file, keras_tkzr):
 	word2vec = get_word2vec(embedding_file)
@@ -133,3 +145,23 @@ def get_embedding_matrix(vocab_size, dimension, embedding_file, keras_tkzr):
 		if embedding_vector is not None:
 			embedding_matrix[i] = embedding_vector
 	return embedding_matrix
+
+
+## get words in each cluster
+def get_words_cluster(assigned_cluster, model):
+	cluster_dict = {}
+	for i, word in enumerate(list(model.wv.vocab)):
+		index = assigned_cluster[i]
+		if (index in cluster_dict):
+			cluster_dict[index].append(str(word))
+		else:
+			cluster_dict[index] = [str(word)]
+	return cluster_dict
+
+
+## model wrappers
+
+# @return a trained svm model
+def svm_wrapper(X_train, Y_train):
+	svm.fit(X_train, Y_train)
+	return svm

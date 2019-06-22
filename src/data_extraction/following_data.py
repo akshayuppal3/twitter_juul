@@ -70,36 +70,33 @@ class twitter_following():
 		with open(filename, "wb") as f:   # last batch
 			pickle.dump(finalData, f)
 
-	# @param df, filename , testMode(bool)
-	# @return None
-	# writes to an excel file
-	def getFriendsData(self,df,output_path,index=None):
-		users = util.getUsers(df,type= 'ID')
-		if isinstance(index,int):
-			users = users[index:]
-			logging.info("Starting with index %d" % index)
-		try:
-			if users:
-				df = pd.DataFrame()
-				apis = deque(self.api_list)
-				for index,user in enumerate(tqdm(users)):
-					try:
-						apis.rotate(-1)
-						api = apis[0]
-						friendList = api.friends_ids(user)  # @API returns list of friends
-						temp = pd.DataFrame(
-							{'userID':user,
-							 'following':[friendList]})
-						df = df.append(temp)
-						util.df_write_csv(temp,output_path)
-					except:
-						logging.error("Some error in connection")
-						continue
-				return df
-
-		except tweepy.TweepError as e:          # except for handling tweepy api call
-			print("[Error] " + e.reason)
-
+	# @param users, filename
+	# @return failed users
+	# writes to an csv file
+	def getFriendsData(self,users, output_path):
+		failed_users = []
+		df_users = pd.DataFrame()
+		apis = deque(self.api_list)
+		for index, user in enumerate(tqdm(users)):
+			try:
+				apis.rotate(-1)
+				api = apis[0]
+				friendList = api.friends_ids(user)  # @API returns list of friends
+				temp = pd.DataFrame(
+					{'userID': user,
+					 'following': [friendList]})
+				df_users = df_users.append(temp)
+				if ((len(df_users) > 0) & (len(df_users) % util.batch_file == 0)):  ## dump after 10000
+					filename = output_path + str(index) + '.csv'
+					util.df_write_csv(df_users, filename)
+					df_users = pd.DataFrame()  # clear
+			except tweepy.TweepError as e:  # except all error
+				logging.error("[Error]",e.reason)
+				failed_users.append(user)  ## keeping a count of failed user to check again
+				continue
+		util.df_write_csv(df_users, output_path)
+		return failed_users
+	
 	# @return DataFrame @ param friends ID and parent ID
 	# takes batch of friend ids and returns detailed information of user
 	def getFriendBatch(self, friendIds, parent_id):
@@ -184,23 +181,19 @@ if __name__ == '__main__':
 	parser.add_argument('-i4', '--inputFile4', help= 'Specify the input file for users for their timeline data',required=False)
 	parser.add_argument('-o',  '--outputFile', help='Specify the output file name with following data',default='followingList')
 	parser.add_argument('-p', '--path', help='Specify the existing path for the file <include extension>')
-	parser.add_argument('-x', '--index', help='Specify the idx for users for following list', default=None)
 	args = vars(parser.parse_args())
 	if (args['inputFile']):
 		logging.info('[NEW] ---------------------------------------------')
 		logging.info('new extraction process started')
 		filename_input = args['inputFile']
-		filename_path = args['outputFile']
-		filename_output = os.path.join(util.inputdir, filename_path + '_trailing'  + '.csv')
-		if (args['index'] is not None):
-			index = int(args['index'])
-		else:
-			index = None
+		filename_output = args['outputFile']
+		output_path = os.path.join(util.inputdir, filename_output)
 		df = util.readCSV(filename_input)
-		df = ob.getFriendsData(df,filename_output,index)
-		filename_output = os.path.join(util.inputdir, filename_path + '.csv')
-		util.output_to_csv(df,filename_output)
-		logging.info("File creation of basic user and following completed")
+		users = util.getUsers(df,"ID")
+		failed_users = ob.getFriendsData(users,output_path)    ## who didn't work
+		failed_2 = ob.getFriendsData(failed_users,output_path) ## trying second time
+		dummy = ob.getFriendsData(failed_2, output_path)       ## trying 3 as last time
+		logging.info("File creation of user and their following completed")
 	if (args['inputFile2']):
 		logging.info('[NEW] ---------------------------------------------')
 		logging.info('getting detailed following list for users')
