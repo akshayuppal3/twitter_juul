@@ -167,8 +167,10 @@ class Cascade():
 		users = util.getUsers(df_users,'ID')
 		return users
 
-	## getting the tweet text and their occurances
-	def get_unique_tweets(self,df):
+	## getting the unique tweets with retweet count> 0
+	## @params input data containing tweets
+	## @return tweets
+	def get_unique_tweets(self,df)->pd.DataFrame():
 		tweet_text_list = list()
 		df_tweets = pd.DataFrame([])
 		for index, tweet in df.iterrows():
@@ -184,13 +186,13 @@ class Cascade():
 
 if __name__ == '__main__':
 	logging.info("*****************new extraction of cascade process started***********************")
-	hexagon_path = os.path.join(util.get_git_root(os.getcwd()), "input", "labelled_data", "tweets_predicted.csv")
+	hexagon_path = os.path.join(util.get_git_root(os.getcwd()),"input","juul_data.csv")
 	model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
-	explored_cascade_path = os.path.join(util.get_git_root(os.getcwd()), "models",'cascade_explored.csv')
-	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
-	cas = Cascade()
+	# explored_cascade_path = os.path.join(util.get_git_root(os.getcwd()), "models",'cascade_explored.csv')
 	# get the existing files:
 	# existing_users = cas.get_existing_user(explored_cascade_path) # not using
+	hexagon_data = pd.read_csv(hexagon_path, lineterminator="\n")
+	cas = Cascade()
 	df_tweets = cas.get_unique_tweets(hexagon_data)
 	for i in range(len(df_tweets)):
 		cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
