@@ -16,7 +16,6 @@ import posixpath
 import numpy as np
 import nltk
 import ast
-from setup import setup_env
 from tqdm import tqdm
 import git
 import networkx as nx
@@ -25,7 +24,6 @@ from keras.preprocessing.sequence import pad_sequences
 import pickle
 tqdm.pandas()
 
-setup_env()  # download necessary nltk packages
 stopwords = nltk.corpus.stopwords.words('english')
 
 ## loading the config file
