@@ -191,8 +191,8 @@ if __name__ == '__main__':
 		df = util.readCSV(filename_input)
 		users = util.getUsers(df,"ID")
 		failed_users = ob.getFriendsData(users,output_path)    ## who didn't work
-		failed_2 = ob.getFriendsData(failed_users,output_path) ## trying second time
-		dummy = ob.getFriendsData(failed_2, output_path)       ## trying 3 as last time
+		failed_2 = ob.getFriendsData(failed_users,output_path+"2") ## trying second time
+		dummy = ob.getFriendsData(failed_2, output_path+"3")       ## trying 3 as last time
 		logging.info("File creation of user and their following completed")
 	if (args['inputFile2']):
 		logging.info('[NEW] ---------------------------------------------')
