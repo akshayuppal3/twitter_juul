@@ -78,7 +78,7 @@ class Cascade():
 					if (user in G.nodes):
 						if ('level' not in G[user]):    # if the level doesn't exist already
 							attr[(user)] = {'friends': list(user_data['friendsCount'])[0],
-							                'followers': list(user_data['userFollowersCount'])[0],
+							                'followers': list(user_data['followersCount'])[0],
 							                'level': level}
 			nx.set_node_attributes(G,attr)
 		return G
@@ -116,7 +116,7 @@ class Cascade():
 		if (len(user_list) != 0):
 			second_user = list()
 			# find the follower relationship
-			df_followers = self.find_connections( source_id, 'followers')
+			df_followers = self.find_connections( source_id, 'followers')  ##  just looking at foolowers type connection
 			if (not df_followers.empty):
 				for node in tqdm(source_id):  # node : source_id list
 					for user in user_list:    # user : user_list
