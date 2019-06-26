@@ -1,52 +1,60 @@
+## func related to lstm
 
-from keras.models import Model, Input
-import matplotlib.pyplot as plt
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers import Embedding
-from keras.layers import Bidirectional
-from keras.layers import LSTM
-import numpy as np
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
-from sklearn.metrics import classification_report
+
 from keras.callbacks import Callback
 
 def training_plot(history):
-    # Plot training & validation accuracy values
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.show()
-    
-    # Plot training & validation loss values
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+	# Plot training & validation accuracy values
+	plt.plot(history.history['acc'])
+	plt.plot(history.history['val_acc'])
+	plt.title('Model accuracy')
+	plt.ylabel('Accuracy')
+	plt.xlabel('Epoch')
+	plt.legend(['Train', 'Validation'], loc='upper left')
+	plt.show()
+	
+	# Plot training & validation loss values
+	plt.plot(history.history['loss'])
+	plt.plot(history.history['val_loss'])
+	plt.title('Model loss')
+	plt.ylabel('Loss')
+	plt.xlabel('Epoch')
+	plt.legend(['Train', 'Test'], loc='upper left')
+	plt.show()
 
 
-def get_lstm_model(max_len,vocab_size,dimension,embedding_matrix):
-    max_len= max_len
-    n_words = vocab_size
-    print("creating model")
-    input = Input(shape=(max_len,))
-    model = Embedding(n_words,dimension,weights=[embedding_matrix],input_length=max_len)(input)
-    model =  Bidirectional (LSTM (100,return_sequences=True,dropout=0.50),merge_mode='concat')(model)
-    model = Flatten()(model)
-    model = Dense(100,activation='relu')(model)
-    output = Dense(2,activation='sigmoid')(model)
-    model = Model(input,output)
-    # sgd = SGD(lr=0.1, momentum=0.9, decay=0.0, nesterov=False)
-    print("compiling the model")
-    model.compile(loss='sparse_categorical_crossentropy',optimizer='adam', metrics=['accuracy'])
-    model.summary()
-    return model
+def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
+	## encoding the test data
+	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
+	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
+	X_test_user, _ = prepare_user_features(test_data)
+	## calculate the model predictions
+	temp = model.predict([X_test, X_test_user])
+	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
+	return y_pred
+
+
+## handle two different inputs and then concatenate them (user and text features)
+## input = [words_in,user_in]
+def create_model(max_len, user_feature_len, vocalb_size, dimension, embedding_matrix):
+	## handle text features..
+	words_in = Input(shape=(max_len,))
+	emb_word = Embedding(vocalb_size, dimension, weights=[embedding_matrix], input_length=max_len)(words_in)
+	lstm_word = Bidirectional(LSTM(100, return_sequences=False, dropout=0.50, kernel_regularizer=regularizers.l2(0.01)),
+	                          merge_mode='concat')(emb_word)
+	lstm_word = Dense(user_feature_len, activation='relu')(lstm_word)
+	
+	## takes the user features as input
+	user_input = Input(shape=(user_feature_len,))
+	
+	## concatenate both of the features
+	modelR = concatenate([lstm_word, user_input])
+	# modelR = SpatialDropout1D(0.1)(modelR)
+	output = Dense(2, activation='softmax')(modelR)
+	model = Model([words_in, user_input], output)
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	return model
+
 
 
 class Metrics(Callback):

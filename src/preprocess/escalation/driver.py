@@ -1,198 +1,95 @@
-import os
-
-import numpy as np
-from imblearn.under_sampling import RandomUnderSampler
-from keras.preprocessing.sequence import pad_sequences
-from keras.preprocessing.text import Tokenizer as keras_Tokenizer
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from sklearn.svm import LinearSVC
-from tqdm import tqdm
-from xgboost import XGBClassifier
-import lstm
+from sklearn.decomposition import TruncatedSVD
+from keras.preprocessing.text import Tokenizer as keras_Tokenizer
 import util
+import preprocessing
 
-embeddings_dir = util.embeddings_dir
-embedding_file = os.path.join(embeddings_dir, "glove.twitter.27B.100d.txt")
+## @ return a trained svm model on text features for LR
+def run_text_features(train_data, test_data, Y_train, Y_test):
+	tf_idf = TfidfVectorizer(sublinear_tf=True)
+	tf_idf.fit(train_data["tweetText"])  ## fit on train data
+	
+	## transform train and test data
+	X_test = tf_idf.transform(test_data["tweetText"])
+	X_train = tf_idf.transform(train_data["tweetText"])
+	
+	## reduce the dimesionality
+	svd = TruncatedSVD(n_components=500, n_iter=7, random_state=42)
+	svd.fit(X_train)
+	X_train = svd.transform(X_train)
+	X_test = svd.transform(X_test)
+	
+	scores, best_model = get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	return (scores, best_model[0], best_model[1], tf_idf, svd)
 
-## @return data, X, y, embedding_matrix, max_len, vocalb
-def prepare_data_lstm(df, users_labelled):
-	dimension = 100
-	
-	df = df[["userID", "tweetText", "tweetId"]]
-	## data
-	print("length of the data", len(df))
-	
-	print("users", len(df.userID.unique()))
-	
-	## cleaning
-	print("cleanining the data")
-	tqdm.pandas()
-	df["tweetText"] = df["tweetText"].progress_apply(util.clean_text)
-	df["tweetText"] = df["tweetText"].progress_apply(util.get_tokens).str.join(" ")
-	
+
+def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, metrics, weight=None):
+	scores = []
 	## print winodow , max_len for analysis purpose
-	max_len = util.get_max_length(df)
+	max_len = get_max_length(train_data)
+	if max_len > 60:
+		max_len = 60
 	print("max_length", max_len)
-	
-	## undersampling based on the users_labelled file
-	users = np.array(list(users_labelled["userID"])).reshape(-1, 1)
-	label = list(users_labelled["label"])
-	
-	print("total users before", len(users))
-	pos_samples = [ele for ele in label if ele == 1]
-	print("length of positive samples before", len(pos_samples))
-	rus = RandomUnderSampler(random_state=0)
-	rus.fit(users, label)
-	users_sample, label_samples = rus.fit_sample(users, label)
-	users_sample = list(users_sample)  ## changing the shape
-	
-	## pos samples after
-	pos_samples = [ele for ele in label_samples if ele == 1]
-	print("length of positive samples after", len(pos_samples))
-	print("total users after", len(users_sample))
-	
-	# adjusting the dataframe based on random undersampling
-	print("before data", len(df))
-	print("users before", len(df.userID.unique()))
-	df = df.loc[df.userID.isin(users_sample)]  ## under sampled data
-	print("after data", len(df))
-	print("after users", len(df.userID.unique()))
-	
-	data = df.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
-	data = data.join(users_labelled.set_index("userID"), on="userID", how="inner")
 	
 	## prepare the tokenizer
 	print("preparing the tokenizer")
 	keras_tkzr = keras_Tokenizer()
-	keras_tkzr.fit_on_texts(data["tweetText"])
+	keras_tkzr.fit_on_texts(train_data["tweetText"])
 	vocab_size = len(keras_tkzr.word_index) + 1
 	print("vocalb", vocab_size)
 	
 	## embedding matrix
 	print("creating glove embeddign matrix")
-	embedding_matrix = util.get_embedding_matrix(vocab_size, dimension, embedding_file,
-	                                             keras_tkzr)  ## tokenizer contains the vocalb info
+	embedding_matrix = get_embedding_matrix(vocab_size, dimension, embedding_file,
+	                                        keras_tkzr)  ## tokenizer contains the vocalb info
 	
 	## encoding the docs
 	print("encoding the data")
-	encoded_docs = keras_tkzr.texts_to_sequences(data["tweetText"])
-	X = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
+	encoded_docs = keras_tkzr.texts_to_sequences(train_data["tweetText"])
+	X_train = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
 	
-	y = np.array(list(data["label"]))
-	
-	print("X", X.shape)
-	print("y", y.shape)
-	
-	return (data, X, y, embedding_matrix, max_len, vocab_size)
-
-## run lstm model
-def run_lstm_model(X, y, embedding_matrix, max_len, vocab_size, dimension, epoch, metrics=lstm.Metrics(), weights=None):
-	## split the data
-	print("train-test split")
-	X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.20, random_state=4, shuffle=True, stratify=y)
-	
-	X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.25, random_state=4, shuffle=True,
-	                                                  stratify=Y_train)
+	## encoding the test data
+	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
+	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
 	
 	print("X-train", X_train.shape)
 	print("X-test", X_test.shape)
 	
+	## getting the user features
+	X_train_user, _ = prepare_user_features(train_data)
+	X_test_user, _ = prepare_user_features(test_data)
+	
+	user_feat_len = (X_train_user.shape[1])
 	print("creating lstm model")
-	model = lstm.get_lstm_model(max_len, vocab_size, dimension, embedding_matrix)
+	model = create_model(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
 	
 	print("training the model with balance dataset")
-	
-	history = model.fit(X_train, Y_train, validation_data=(X_val, Y_val), nb_epoch=epoch,
-	                    verbose=1, batch_size=32, class_weight=weights, callbacks=[metrics])
+	history = model.fit([X_train, X_train_user], Y_train, validation_split=0.25, nb_epoch=epoch,
+	                    verbose=1, batch_size=32, class_weight=None, )
 	
 	##plotting trainin validation - no point as we dont want ot look at accuarcy
-	lstm.training_plot(history)
+	training_plot(history)
+	
+	scores = get_cross_val_score(train_data, Y_train, n_splits=5, nb_epoch=epoch)
 	
 	print("generating classfication report")
-	loss, accuracy = model.evaluate(X_test, Y_test, verbose=2)
+	loss, accuracy = model.evaluate([X_test, X_test_user], Y_test, verbose=2)
 	print('Accuracy: %f' % (accuracy * 100))
 	## lstm model
-	temp = model.predict(X_test)
-	y_pred = [np.argmax(value) for value in temp]
+	temp = model.predict([X_test, X_test_user])
+	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
 	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	f1_score = (util.get_f1(Y_test, y_pred))
+	
+	print("lstm cross val score ", np.array(scores).mean())
 	
 	print("job finished")
-	return (model, f1_score)
-
-## @returns tfidf vectorized data
-def prepare_data_tfidf(df, users_labelled):
-	tqdm.pandas()
-	df["tweetText"] = df["tweetText"].progress_apply(util.clean_text)
-	df["tweetText"] = df["tweetText"].progress_apply(util.get_tokens).str.join(" ")
-	data = df.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
-	data = data.join(users_labelled.set_index("userID"), on="userID", how="inner")
-	# ## prepare the tokenizer
-	print("preparing the tokenizer")
-	tf_idf = TfidfVectorizer(sublinear_tf=True)
-	tf_idf.fit(data["tweetText"])
-	X = tf_idf.fit_transform(data["tweetText"])
-	y = np.array(list(data["label"]))
-	
-	print("downsampling")
-	rus = RandomUnderSampler(random_state=0)
-	rus.fit(X, y)
-	X_sam, y_sam = rus.fit_sample(X, y)
-	
-	print("downsampled data length", (X_sam.shape))
-	print("train-test split")
-	
-	X_train, X_test, Y_train, Y_test = train_test_split(X_sam, y_sam, test_size=0.20, random_state=4, shuffle=True,
-	                                                    stratify=y_sam)
-	return ((X_train, Y_train, X_test, Y_test), tf_idf)
+	return (scores, y_pred, model, keras_tkzr, max_len)
 
 
-## @ return scores from baseline models
-def get_baseline_scores(X_train, Y_train, X_test, Y_test):
-	print("training the models")
-	print("svm")
-	svm = LinearSVC(C=1, verbose=1)
-	svm.fit(X_train, Y_train)
+def run_user_features(train_data, test_data, Y_train, Y_test):
+	X_train, _ = prepare_user_features(train_data)
+	X_test, _ = prepare_user_features(test_data)
 	
-	print("rf")
-	rf = RandomForestClassifier(n_estimators=100, max_depth=2,
-	                            random_state=0)
-	rf.fit(X_train, Y_train)
-	
-	print("xgBoost")
-	xgb = XGBClassifier()
-	xgb.fit(X_train, Y_train)
-	
-	print("predicting scores")
-	print("svm")
-	y_pred = svm.predict(X_test)
-	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	svm_score = (util.get_f1(Y_test, y_pred))
-	
-	print("random_forest")
-	y_pred = rf.predict(X_test)
-	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	rf_score = (util.get_f1(Y_test, y_pred))
-	
-	print("xgboost")
-	y_pred = xgb.predict(X_test)
-	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	xgb_score = (util.get_f1(Y_test, y_pred))
-	
-	y_pred = [1 for x in range(len(Y_test))]
-	print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	maj_score = (util.get_f1(Y_test, y_pred))
-	
-	print("job finished")
-	final = {
-		'svm': [svm, svm_score],
-		'rf': [rf, rf_score],
-		'xg_boost': [xgb, xgb_score],
-		'maj': [maj_score],
-		# 'tf-idf': tf_idf,
-	}
-	return (final)
+	scores, best_model = get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	return (scores, best_model[0], best_model[1])
 
