@@ -1,3 +1,5 @@
+#  helper functions
+
 import nltk
 from numpy import zeros
 from nltk.corpus import stopwords

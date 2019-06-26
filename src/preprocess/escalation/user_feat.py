@@ -1,17 +1,20 @@
+# this has functions related to extarcting user features..
+
+## returns text prediction using svd using model passed
 def cal_text_pred(test_data, Y_test, model, tf_idf, svd):
 	X_test = tf_idf.transform(test_data["tweetText"])
 	X_test = svd.transform(X_test)  ## reduce the dimensionality
 	y_pred = model.predict(X_test)
 	return y_pred
 
-
+## calculates user predictions based on the mdoel passed
 def cal_user_pred(test_data, Y_test, model):
 	X_test, _ = prepare_user_features(test_data)
 	y_pred = model.predict(X_test)
 	return y_pred
 
 
-## return user fatures
+## extracts user features fom the twitter data
 def prepare_user_features(input_):
 	user_data = input_[["followersCount", "friendsCount", "statusesCount"
 		, "favourites_count", "listedCount", "tweetCount", ]]

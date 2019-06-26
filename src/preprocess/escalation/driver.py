@@ -1,3 +1,5 @@
+# driver functions related to running user and text features
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from keras.preprocessing.text import Tokenizer as keras_Tokenizer
@@ -22,8 +24,9 @@ def run_text_features(train_data, test_data, Y_train, Y_test):
 	scores, best_model = get_baseline_scores(X_train, X_test, Y_train, Y_test)
 	return (scores, best_model[0], best_model[1], tf_idf, svd)
 
-
-def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, metrics, weight=None):
+## pipeline for lstm model for processing user and text features.
+## @return cross val scores, model, tokenizer and max_len
+def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, weight=None):
 	scores = []
 	## print winodow , max_len for analysis purpose
 	max_len = get_max_length(train_data)
@@ -65,7 +68,7 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, metrics, 
 	
 	print("training the model with balance dataset")
 	history = model.fit([X_train, X_train_user], Y_train, validation_split=0.25, nb_epoch=epoch,
-	                    verbose=1, batch_size=32, class_weight=None, )
+	                    verbose=1, batch_size=32, class_weight=weight, )
 	
 	##plotting trainin validation - no point as we dont want ot look at accuarcy
 	training_plot(history)
@@ -85,7 +88,7 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, metrics, 
 	print("job finished")
 	return (scores, y_pred, model, keras_tkzr, max_len)
 
-
+## run the pipeline for user features
 def run_user_features(train_data, test_data, Y_train, Y_test):
 	X_train, _ = prepare_user_features(train_data)
 	X_test, _ = prepare_user_features(test_data)

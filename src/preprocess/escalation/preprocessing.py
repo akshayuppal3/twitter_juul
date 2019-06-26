@@ -1,7 +1,6 @@
+# This function is related to pre-processing data
 
-# This function is related to postprocessing data
-
-
+## prepare data and splits the data into train and test
 def prepare_data(input_data, users_labelled):
 	## preapring the user data
 	user_data = input_data.groupby(by="userID").agg({'tweetText': 'count',
