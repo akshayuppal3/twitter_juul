@@ -1,4 +1,11 @@
 # This function is related to pre-processing data
+import pandas as pd
+from tqdm import tqdm
+import numpy as np
+import util
+from imblearn.under_sampling import RandomUnderSampler
+from sklearn.model_selection import train_test_split
+tqdm.pandas()
 
 ## prepare data and splits the data into train and test
 def prepare_data(input_data, users_labelled):
@@ -9,14 +16,14 @@ def prepare_data(input_data, users_labelled):
 	                                                 'statusesCount': 'first',
 	                                                 'favourites_count': 'first',
 	                                                 'listedCount': 'first',
-	                                                 })
+	                                                 }).reset_index()
 	user_data = user_data.rename(columns={'tweetText': 'tweetCount'})
 	
 	# preapring text
 	tweet_data = input_data.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
 	## cleaning the text
-	tweet_data["tweetText"] = tweet_data["tweetText"].progress_apply(clean_text)
-	tweet_data["tweetText"] = tweet_data["tweetText"].progress_apply(get_tokens).str.join(" ")
+	tweet_data["tweetText"] = tweet_data["tweetText"].progress_apply(util.clean_text)
+	tweet_data["tweetText"] = tweet_data["tweetText"].progress_apply(util.get_tokens).str.join(" ")
 	
 	## merging the text and user data
 	final_data = user_data.join(tweet_data.set_index("userID"), on="userID", how="inner").reset_index()
@@ -55,7 +62,7 @@ def prepare_user_features(input_):
 		user_data[["followersCount", "friendsCount", "statusesCount", "favourites_count",
 		           "listedCount"]])
 	
-	user_data["unigrams"] = list(input_["tweetText"].apply(get_length))
+	user_data["unigrams"] = list(input_["tweetText"].apply(util.get_length))
 	
 	## replace the na and inf values
 	user_data = user_data.replace([np.inf, -np.inf], np.nan)

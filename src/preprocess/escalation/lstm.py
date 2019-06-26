@@ -1,8 +1,20 @@
 ## func related to lstm model
-
+import util
+import numpy as np
+import matplotlib.pyplot as plt
+import preprocessing
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import classification_report
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 from keras.callbacks import Callback
-
+from keras.models import Model, Input
+from keras.layers import (Dense, concatenate,Flatten,SpatialDropout1D,Embedding,Bidirectional,
+                          LSTM,TimeDistributed,Reshape,Average,Dropout)
+from keras import regularizers
+from keras.preprocessing.text import Tokenizer as keras_Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 
 ## plotting train and test plot
 def training_plot(history):
@@ -29,7 +41,7 @@ def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
 	## encoding the test data
 	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
 	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
-	X_test_user, _ = prepare_user_features(test_data)
+	X_test_user, _ = preprocessing.prepare_user_features(test_data)
 	## calculate the model predictions
 	temp = model.predict([X_test, X_test_user])
 	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
@@ -86,7 +98,7 @@ def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
 	kFold = StratifiedKFold(n_splits=n_splits)
 	for train, test in kFold.split(train_ids, Y_train):
 		
-		max_len = get_max_length(train_data.loc[train])
+		max_len = util.get_max_length(train_data.loc[train])
 		if max_len > 60:
 			max_len = 60
 		print("max_length", max_len)
@@ -100,11 +112,11 @@ def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
 		
 		## embedding matrix
 		print("creating glove embeddign matrix")
-		embedding_matrix = get_embedding_matrix(vocab_size, dimension, embedding_file,
+		embedding_matrix = util.get_embedding_matrix(vocab_size, dimension, util.embedding_file,
 		                                        keras_tkzr)  ## tokenizer contains the vocalb info
 		
-		X_train_user, _ = prepare_user_features(train_data.loc[train])
-		X_test_user, _ = prepare_user_features(train_data.loc[test])
+		X_train_user, _ = preprocessing.prepare_user_features(train_data.loc[train])
+		X_test_user, _ = preprocessing.prepare_user_features(train_data.loc[test])
 		
 		encoded_docs = keras_tkzr.texts_to_sequences(train_data.loc[train]["tweetText"])
 		X_train = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
@@ -115,7 +127,7 @@ def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
 		print("creating lstm model")
 		model = create_model(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
 		
-		history = model.fit([X_train, X_train_user], Y_train[train], validation_split=0.25, nb_epoch=epoch,
+		history = model.fit([X_train, X_train_user], Y_train[train], validation_split=0.25, nb_epoch=nb_epoch,
 		                    verbose=1, batch_size=32, class_weight=None, )
 		training_plot(history)
 		
