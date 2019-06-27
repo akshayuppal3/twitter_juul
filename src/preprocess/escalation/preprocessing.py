@@ -4,7 +4,6 @@ from tqdm import tqdm
 import numpy as np
 import util
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import train_test_split
 tqdm.pandas()
 
@@ -32,18 +31,15 @@ def prepare_data(input_data, users_labelled):
 	
 	## extract the labels
 	y = list(final_data.join(users_labelled.set_index("userID"), on="userID", how="inner")["label"])
-	print("oversampling")
+	print("downsampling")
 	
 	## downsampling based on userIDS
 	userIDs = np.array(list(final_data.userID)).reshape(-1, 1)
-	# rus = RandomUnderSampler(random_state=0)
-	rus = RandomOverSampler(random_state=0)  ## oversampling instead of under
+	rus = RandomUnderSampler(random_state=0)
 	rus.fit(userIDs, y)
 	userIDs, y_sam = rus.fit_sample(userIDs, y)
-	print("userIDS len",len(userIDs.flatten()))
-	print(userIDs.flatten())
 	input_data = (final_data.loc[final_data.userID.isin(userIDs.flatten())])
-	print("oversampled data length", len(input_data))
+	print("downsampled data length", len(input_data))
 	
 	print("train-test split")
 	train_data, test_data, Y_train, Y_test = train_test_split(input_data, y_sam, test_size=0.20, random_state=4,
