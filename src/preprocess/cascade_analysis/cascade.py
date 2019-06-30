@@ -161,11 +161,25 @@ class Cascade():
 		else:
 			return (G)
 	
-	## get existing files
-	def get_existing_user(self, path):
-		df_users = util.readCSV(path)
-		users = util.getUsers(df_users, 'ID')
-		return users
+	# ! deprecated
+	# ## get existing files
+	# def get_existing_user(self, path):
+	# 	df_users = util.readCSV(path)
+	# 	users = util.getUsers(df_users, 'ID')
+	# 	return users
+	#
+	## returns the existing source node userIDs in the dir path
+	## graphs are created G + source_ndoe + retweet count
+	## it extracts the source_node
+	def get_existing_users(self,path):
+		if os.path.exists(path):
+			filenames = (os.listdir(path))
+			existing_users = []
+			for ele in filenames:
+				existing_users.append(ele.split("_")[1])  ## extracting the userID
+			return existing_users
+		else:
+			return []
 	
 	## getting the unique tweets with retweet count> 0
 	## @params input data containing tweets
@@ -195,18 +209,18 @@ if __name__ == '__main__':
 		data_path = args['inputFile']
 		output_filename = args['outputName']
 		model_path = os.path.join(util.get_git_root(os.getcwd()), "models")
-		# explored_cascade_path = os.path.join(util.get_git_root(os.getcwd()), "models",'cascade_explored.csv')
 		# get the existing files:
-		# existing_users = cas.get_existing_user(explored_cascade_path) # not using
-		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
 		cas = Cascade()
+		existing_users = cas.get_existing_users(os.path.join(model_path,output_filename))
+		print("existing users",len(existing_users))
+		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
 		df_tweets = cas.get_unique_tweets(hexagon_data)
 		for i in range(len(df_tweets)):
 			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 			cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
 			source_node = cascade.head(1)['userID'].values[0]
-			if (source_node):  # if (source_node not in set(existing_users)):
+			if (source_node not in set(existing_users)):  #if (source_node):
 				logging.info(str("creating cascade for user " + str(source_node)))
 				retweet_count = cascade.head(1)['retweetCount'].values[0]
 				users = set(list(cascade['userID']))  # to remove duplicate entries
