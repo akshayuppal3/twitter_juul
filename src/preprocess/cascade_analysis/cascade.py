@@ -190,7 +190,8 @@ class Cascade():
 	def get_unique_tweets(self, df) -> pd.DataFrame():
 		tweet_text_list = list()
 		df_tweets = pd.DataFrame([])
-		for index, tweet in df.iterrows():
+		print("getting unique tweets")
+		for index, tweet in tqdm(df.iterrows(),total=len(df)):
 			text = tweet['tweetText']
 			retweet_count = tweet['retweetCount']
 			if retweet_count > 0:
@@ -216,8 +217,9 @@ if __name__ == '__main__':
 		cas = Cascade()
 		existing_users = cas.get_existing_users(os.path.join(model_path,output_filename))
 		print("existing users",len(existing_users))
-		print("getting usique tweets")
+		print("reading file")
 		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
+		print("reading file done")
 		df_tweets = cas.get_unique_tweets(hexagon_data)
 		print("unique tweets done")
 		for i in tqdm(range(len(df_tweets))):
@@ -225,7 +227,7 @@ if __name__ == '__main__':
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 			print("sorting tweets")
 			cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
-			print("sortign the tweets done")
+			print("sorting the tweets done")
 			source_node = cascade.head(1)['userID'].values[0]
 			if (source_node not in set(existing_users)):  #if (source_node):
 				logging.info(str("creating cascade for user " + str(source_node)))
