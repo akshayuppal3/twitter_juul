@@ -1,20 +1,21 @@
 ## func related to lstm model
-import util
-import numpy as np
 import matplotlib.pyplot as plt
-import preprocessing
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import precision_recall_fscore_support
+import numpy as np
+from keras import regularizers
+from keras.callbacks import Callback
+from keras.layers import (Dense, concatenate, Embedding, Bidirectional,
+                          LSTM, Reshape)
+from keras.models import Model, Input
+from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import Tokenizer as keras_Tokenizer
 from sklearn.metrics import classification_report
 from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.model_selection import StratifiedKFold
 
-from keras.callbacks import Callback
-from keras.models import Model, Input
-from keras.layers import (Dense, concatenate,Flatten,SpatialDropout1D,Embedding,Bidirectional,
-                          LSTM,TimeDistributed,Reshape,Average,Dropout)
-from keras import regularizers
-from keras.preprocessing.text import Tokenizer as keras_Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+import preprocessing
+import util
+
 
 ## plotting train and test plot
 def training_plot(history):
@@ -36,6 +37,7 @@ def training_plot(history):
 	plt.legend(['Train', 'Test'], loc='upper left')
 	plt.show()
 
+
 ## calculated the lstm prediction
 def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
 	## encoding the test data
@@ -50,7 +52,26 @@ def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
 
 ## handle two different inputs and then concatenate them (user and text features)
 ## return lstm mdoel with input = [words_in,user_in]
-def create_model(max_len, user_feature_len, vocalb_size, dimension, embedding_matrix):
+def create_model(max_len, vocalb_size, dimension, embedding_matrix):
+	## handle text features..
+	words_in = Input(shape=(max_len,))
+	emb_word = Embedding(vocalb_size, dimension, weights=[embedding_matrix], input_length=max_len)(words_in)
+	lstm_word = Bidirectional(LSTM(100, return_sequences=False, dropout=0.50, kernel_regularizer=regularizers.l2(0.01)),
+	                          merge_mode='concat')(emb_word)
+	
+	# modelR = SpatialDropout1D(0.1)(modelR)
+	output = Dense(2, activation='sigmoid')(lstm_word)
+	model = Model(input, output)
+	# sgd = SGD(lr=0.1, momentum=0.9, decay=0.0, nesterov=False)
+	print("compiling the model")
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print(model.summary())
+	return model
+
+
+## handle two different inputs and then concatenate them (user and text features)
+## return lstm mdoel with input = [words_in,user_in]
+def create_model_comb(max_len, user_feature_len, vocalb_size, dimension, embedding_matrix):
 	## handle text features..
 	words_in = Input(shape=(max_len,))
 	emb_word = Embedding(vocalb_size, dimension, weights=[embedding_matrix], input_length=max_len)(words_in)
@@ -68,6 +89,25 @@ def create_model(max_len, user_feature_len, vocalb_size, dimension, embedding_ma
 	model = Model([words_in, user_input], output)
 	model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 	return model
+
+
+def create_model_seq(max_len, window, vocab_size, dimension, embedding_matrix):
+	max_len = max_len
+	n_words = vocab_size
+	Dimension = 100
+	input = Input(shape=(window, max_len,))
+	model = Embedding(n_words, dimension, weights=[embedding_matrix], input_length=(window, max_len,))(input)
+	model = Reshape(target_shape=(window, (max_len * Dimension)))(model)
+	# model =  Bidirectional (LSTM (100,return_sequences=True,dropout=0.25),merge_mode='concat')(model)
+	model = Bidirectional(LSTM(100, return_sequences=False, dropout=0.25), merge_mode='concat')(model)
+	output = Dense(2, activation='sigmoid')(model)
+	model = Model(input, output)
+	# sgd = SGD(lr=0.1, momentum=0.9, decay=0.0, nesterov=False)
+	print("compiling the model")
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print(model.summary())
+	return model
+
 
 ## callback function for overriding epoch end etc.
 class Metrics(Callback):
@@ -113,7 +153,7 @@ def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
 		## embedding matrix
 		print("creating glove embeddign matrix")
 		embedding_matrix = util.get_embedding_matrix(vocab_size, dimension, util.embedding_file,
-		                                        keras_tkzr)  ## tokenizer contains the vocalb info
+		                                             keras_tkzr)  ## tokenizer contains the vocalb info
 		
 		X_train_user, _ = preprocessing.prepare_user_features(train_data.loc[train])
 		X_test_user, _ = preprocessing.prepare_user_features(train_data.loc[test])
@@ -125,7 +165,7 @@ def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
 		
 		user_feat_len = (X_train_user.shape[1])
 		print("creating lstm model")
-		model = create_model(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
+		model = create_model_comb(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
 		
 		history = model.fit([X_train, X_train_user], Y_train[train], validation_split=0.25, nb_epoch=nb_epoch,
 		                    verbose=1, batch_size=32, class_weight=None, )
