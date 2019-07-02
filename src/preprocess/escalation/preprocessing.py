@@ -1,12 +1,14 @@
 # This function is related to pre-processing data
-import pandas as pd
-from tqdm import tqdm
 import numpy as np
-import util
+import pandas as pd
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+
+import util
+
 tqdm.pandas()
+
 
 ## prepare data and splits the data into train and test
 def prepare_data(input_data, users_labelled):
@@ -36,7 +38,7 @@ def prepare_data(input_data, users_labelled):
 	
 	## downsampling based on userIDS
 	userIDs = np.array(list(final_data.userID)).reshape(-1, 1)
-	rus = RandomUnderSampler(random_state=0)   # rus = RandomOverSampler(random_state=0)
+	rus = RandomUnderSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
 	rus.fit(userIDs, y)
 	userIDs, y_sam = rus.fit_sample(userIDs, y)
 	# print("userIDS len", len(userIDs.flatten()))
@@ -108,3 +110,12 @@ def get_year_data(year, first_data, juul_data):
 	users_lbl.loc[users_lbl.userID.isin(poly_turn), "label"] = 1
 	len(users_lbl.loc[users_lbl.label == 1])  ## sanity check
 	return ((year, data_, users_lbl))
+
+
+# get month data for between the interval start and end
+def get_month_data(data_2018, first, end):
+	bucket_ = data_2018.loc[
+		(data_2018.tweetCreatedAt.dt.month >= first) & (data_2018.tweetCreatedAt.dt.month <= end)]  ## first
+	print("length of the data", len(bucket_))
+	print("total users", len(bucket_.userID.unique()))
+	return bucket_
