@@ -184,7 +184,9 @@ class Cascade():
 		print("grouping by unique text started")
 		df = df.loc[df["retweetCount"] > 1]    # taking only ones with rt count > 0
 		## group by tweet -> unique tweets
-		df = df.groupby(by="tweetText")["tweetText"].first().rename("tweet_text").reset_index()
+		df = df.groupby(by="tweetText").agg({"tweetText": ['first', 'count']}).reset_index()
+		df.columns = ["text", "tweet_text", "count"]
+		df = df.loc[df["count"] > 1]
 		df = df[["tweet_text"]]
 		return df
 
