@@ -188,18 +188,19 @@ class Cascade():
 	## @params input data containing tweets
 	## @return tweets
 	def get_unique_tweets(self, df) -> pd.DataFrame():
-		tweet_text_list = list()
-		df_tweets = pd.DataFrame([])
-		print("getting unique tweets")
-		for index, tweet in tqdm(df.iterrows(),total=len(df)):
-			text = tweet['tweetText']
-			retweet_count = tweet['retweetCount']
-			if retweet_count > 0:
-				if text not in tweet_text_list:
-					tweet_text_list.append(text)
-					df_tweets = df_tweets.append(pd.DataFrame({'tweet_text': text,
-					                                           'retweet_count': retweet_count}, index=[0]),
-					                             ignore_index=True)
+		df_tweets = df.groupby(by="tweetText")["tweetText"].apply(lambda x: x.sum()).reset_index()
+		# tweet_text_list = list()
+		# df_tweets = pd.DataFrame([])
+		# print("getting unique tweets")
+		# for index, tweet in tqdm(df.iterrows(),total=len(df)):
+		# 	text = tweet['tweetText']
+		# 	retweet_count = tweet['retweetCount']
+		# 	if retweet_count > 0:
+		# 		if text not in tweet_text_list:
+		# 			tweet_text_list.append(text)
+		# 			df_tweets = df_tweets.append(pd.DataFrame({'tweet_text': text,
+		# 			                                           'retweet_count': retweet_count}, index=[0]),
+		# 			                             ignore_index=True)
 		return df_tweets
 
 
@@ -220,8 +221,8 @@ if __name__ == '__main__':
 		print("reading file")
 		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
 		print("reading file done")
-		df_tweets = cas.get_unique_tweets(hexagon_data)
-		print("unique tweets done")
+		df_tweets = cas.get_unique_tweets(hexagon_data)  ## to get users for unique cascades
+		print("getting unique tweets done")
 		for i in tqdm(range(len(df_tweets))):
 			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
