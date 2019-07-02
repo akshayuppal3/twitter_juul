@@ -11,6 +11,7 @@ from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import TweetTokenizer
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.model_selection import StratifiedKFold
 
 nltk.download('wordnet')
 nltk.download('stopwords')
@@ -140,3 +141,14 @@ def plot_coeff(k, model, feature_names):
 	plt.show()
 	return coef
 
+
+def get_cross_val(model, X, Y, n_splits):
+	kFold = StratifiedKFold(n_splits=n_splits)
+	scores = []
+	for train, test in kFold.split(X, Y):
+		model.fit(X[train], Y[train])
+		y_pred = model.predict(X[test])
+		scores.append(precision_recall_fscore_support(Y[test], y_pred, average=None)[2])
+	score1 = np.mean([ele[0] for ele in scores])
+	score2 = np.mean([ele[1] for ele in scores])
+	return np.array([score1, score2])

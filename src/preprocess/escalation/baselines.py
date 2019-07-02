@@ -6,6 +6,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
+import util
 
 import preprocessing
 
@@ -38,42 +39,34 @@ def get_baseline_scores(X_train, X_test, Y_train, Y_test):
 	svm = LinearSVC(C=1, verbose=1)
 	svm.fit(X_train, Y_train)
 	svm_pred = svm.predict(X_test)
-	# svm_score = precision_recall_fscore_support(Y_test, svm_pred, average=None)[2]  # return the f-score
-	svm_f1 = cross_val_score(svm, X_test, Y_test, cv=5, scoring='f1_macro').mean()
+	svm_f1 = util.get_cross_val(svm,X_test,Y_test,n_splits=5)
 	print('svm cross val score mean', svm_f1, '\n')
-	
 	print("random_forest")
 	rf = RandomForestClassifier(n_estimators=100, max_depth=2,
 	                            random_state=0)
 	rf.fit(X_train, Y_train)
 	rf_pred = rf.predict(X_test)
-	# rf_score = precision_recall_fscore_support(Y_test, rf_pred, average=None)[2]
-	rf_f1 = cross_val_score(rf, X_test, Y_test, cv=5, scoring='f1_macro').mean()
+	rf_f1 = util.get_cross_val(rf,X_test,Y_test,n_splits=5)
+	
 	print('rf cross val score mean', rf_f1, '\n')
 	
 	print("xgBoost")
 	xgb = XGBClassifier()
 	xgb.fit(X_train, Y_train)
 	xgb_pred = xgb.predict(X_test)
-	# xgb_score = precision_recall_fscore_support(Y_test, xgb_pred, average=None)[2]
-	xgb_f1 = cross_val_score(xgb, X_test, Y_test, cv=5, scoring='f1_macro').mean()
+	xgb_f1 = util.get_cross_val(xgb, X_test, Y_test, n_splits=5)
 	print('xgb corss val score mean', xgb_f1, '\n')
 	
-	y_pred = [1 for x in range(len(Y_test))]
-	# print('  Classification Report:\n', classification_report(Y_test, y_pred), '\n')
-	maj_score = precision_recall_fscore_support(Y_test, y_pred, average=None)[2]
-	
 	models = {0: "svm", 1: "rf", 2: "xgb"}
-	best_model_idx = np.argmax([svm_f1, rf_f1, xgb_f1])  ## get the best performing model based on f1
+	best_model_idx = np.argmax([svm_f1.mean(), rf_f1.mean(), xgb_f1.mean()])  ## get the best performing model based on f1
 	
 	print("the best model", models[best_model_idx])
 	
-	print("job finished")
+	print("baseline scores calculated")
 	all_models = {
 		'svm': [svm_pred, svm_f1, svm],
 		'rf': [rf_pred, rf_f1, rf],
 		'xgb': [xgb_pred, xgb_f1, xgb],
-		'maj': [maj_score],
 	}
 	return (all_models)
 
