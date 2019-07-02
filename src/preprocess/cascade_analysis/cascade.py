@@ -216,12 +216,16 @@ if __name__ == '__main__':
 		cas = Cascade()
 		existing_users = cas.get_existing_users(os.path.join(model_path,output_filename))
 		print("existing users",len(existing_users))
+		print("getting usique tweets")
 		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
 		df_tweets = cas.get_unique_tweets(hexagon_data)
+		print("unique tweets done")
 		for i in tqdm(range(len(df_tweets))):
 			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
+			print("sorting tweets")
 			cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
+			print("sortign the tweets done")
 			source_node = cascade.head(1)['userID'].values[0]
 			if (source_node not in set(existing_users)):  #if (source_node):
 				logging.info(str("creating cascade for user " + str(source_node)))
