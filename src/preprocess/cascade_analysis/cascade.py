@@ -164,13 +164,6 @@ class Cascade():
 		else:
 			return (G)
 	
-	# ! deprecated
-	# ## get existing files
-	# def get_existing_user(self, path):
-	# 	df_users = util.readCSV(path)
-	# 	users = util.getUsers(df_users, 'ID')
-	# 	return users
-	#
 	## returns the existing source node userIDs in the dir path
 	## graphs are created G + source_ndoe + retweet count
 	## it extracts the source_node
@@ -190,7 +183,7 @@ class Cascade():
 	def get_unique_tweets(self, df) -> pd.DataFrame():
 		print("grouping by unique text started")
 		df = df.loc[df["retweetCount"] > 0]    # taking only ones with rt count > 0
-		df_tweets = df.groupby(by="tweetText")["tweetText"].apply(lambda x: x.sum()).reset_index()
+		df_tweets = df.groupby(by="tweetText")["tweetText"].agg({'tweet_text':lambda x: x.sum()}).reset_index()
 		return df_tweets
 
 
