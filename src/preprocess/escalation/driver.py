@@ -35,8 +35,8 @@ def run_text_features(train_data, test_data, Y_train, Y_test):
 	X_train = svd.transform(X_train)
 	X_test = svd.transform(X_test)
 	
-	scores, best_model = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
-	return (scores, best_model[0], best_model[1], tf_idf, svd)
+	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	return (baseline_models, tf_idf, svd)
 
 ## pipeline for lstm model for processing user and text features.
 ## @return cross val scores, model, tokenizer and max_len

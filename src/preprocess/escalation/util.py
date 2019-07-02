@@ -10,6 +10,7 @@ import numpy as np
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import TweetTokenizer
+from sklearn.metrics import precision_recall_fscore_support
 
 nltk.download('wordnet')
 nltk.download('stopwords')
@@ -138,3 +139,4 @@ def plot_coeff(k, model, feature_names):
 	plt.xticks(np.arange(1, 1 + 2 * k), feature_names[top_coefficients], rotation=60, ha='right', fontsize=20)
 	plt.show()
 	return coef
+

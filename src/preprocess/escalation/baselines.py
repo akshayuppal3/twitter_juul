@@ -6,6 +6,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
+
 import preprocessing
 
 
@@ -75,3 +76,13 @@ def get_baseline_scores(X_train, X_test, Y_train, Y_test):
 		'maj': [maj_score],
 	}
 	return (all_models)
+
+
+def get_weighted_f1(Y_true, Y_pred):
+	f_scores = precision_recall_fscore_support(Y_true, Y_pred)[2]
+	supports = precision_recall_fscore_support(Y_true, Y_pred)[3]
+	f1_num = 0
+	for f_s, sup in zip(f_scores, supports):
+		f1_num += (f_s * sup)
+	f1 = f1_num / np.sum(supports)
+	return (f1)
