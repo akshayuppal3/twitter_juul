@@ -188,6 +188,7 @@ class Cascade():
 	## @params input data containing tweets
 	## @return tweets
 	def get_unique_tweets(self, df) -> pd.DataFrame():
+		print("grouping by unique text started")
 		df_tweets = df.groupby(by="tweetText")["tweetText"].apply(lambda x: x.sum()).reset_index()
 		# tweet_text_list = list()
 		# df_tweets = pd.DataFrame([])
