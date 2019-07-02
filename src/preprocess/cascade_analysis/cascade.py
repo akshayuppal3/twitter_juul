@@ -214,7 +214,7 @@ if __name__ == '__main__':
 		df_tweets = cas.get_unique_tweets(hexagon_data)  ## to get users for unique cascades
 		print("getting unique tweets done")
 		for i in tqdm(range(len(df_tweets))):
-			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
+			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]] ## cascade of unique text
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 			print("sorting tweets")
 			cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
