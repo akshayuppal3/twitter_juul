@@ -187,6 +187,7 @@ class Cascade():
 		df = df.groupby(by="tweetText").agg({"tweetText": ['first', 'count']}).reset_index()
 		df.columns = ["text", "tweet_text", "count"]
 		df = df.loc[df["count"] > 1]
+		df = df.reset_index()
 		df = df[["tweet_text"]]
 		return df
 
