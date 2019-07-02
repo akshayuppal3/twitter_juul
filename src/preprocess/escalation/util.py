@@ -2,14 +2,14 @@
 
 import os
 import re
-import numpy as np
+
 import git
+import matplotlib.pyplot as plt
 import nltk
+import numpy as np
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import TweetTokenizer
-from sklearn.svm import LinearSVC
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 nltk.download('wordnet')
 nltk.download('stopwords')
@@ -61,6 +61,28 @@ def get_length(s):
 	return (len(a))
 
 
+## get window size
+def get_window_size(df):
+	tweet_count = df.groupby(by="userID")["tweetId"].count()
+	tweet_count = tweet_count.reset_index()
+	window = int(tweet_count.tweetId.quantile(0.95))
+	return window
+
+
+def get_sequence(df, column, window, max_len):
+	users = df.userID.unique()  # select the unique users
+	X = []
+	for user in tqdm(users):
+		temp = list(df[column].loc[df.userID.isin([user])])
+		if len(temp) < window:
+			pad = np.zeros(((window - len(temp)), max_len))  # pad in case data is less than the window
+			data = np.vstack((temp, pad))
+		else:
+			data = temp[:window]  ## truncate to be equal to window size
+		X.append(data)
+	return np.array(X)
+
+
 ## cleaning files
 def clean_text(text):
 	text = re.sub(r'(https?://\S+)', "", text)  ## remove url
@@ -101,3 +123,18 @@ def get_word2vec(file_path):
 		return (word2vec)
 	else:
 		print("invalid fiel path")
+
+
+def plot_coeff(k, model, feature_names):
+	coef = (model.coef_.ravel())
+	top_positive_coefficients = np.argsort(coef)[-k:]
+	top_negative_coefficients = np.argsort(coef)[:k]
+	top_coefficients = np.hstack([top_negative_coefficients, top_positive_coefficients])
+	# create plot
+	plt.figure(figsize=(17, 8))
+	colors = ['red' if c < 0 else 'blue' for c in coef[top_coefficients]]
+	plt.bar(np.arange(2 * k), coef[top_coefficients], color=colors)
+	feature_names = np.array(feature_names)
+	plt.xticks(np.arange(1, 1 + 2 * k), feature_names[top_coefficients], rotation=60, ha='right', fontsize=20)
+	plt.show()
+	return coef

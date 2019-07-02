@@ -9,8 +9,16 @@ import util
 import preprocessing
 import lstm
 import numpy as np
-import model
+import baselines
 
+
+## run the pipeline for user features
+def run_user_features(train_data, test_data, Y_train, Y_test):
+	X_train, _ = preprocessing.prepare_user_features(train_data)
+	X_test, _ = preprocessing.prepare_user_features(test_data)
+	
+	all_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	return (all_models)
 
 ## @ return a trained svm model on text features for LR
 def run_text_features(train_data, test_data, Y_train, Y_test):
@@ -27,7 +35,7 @@ def run_text_features(train_data, test_data, Y_train, Y_test):
 	X_train = svd.transform(X_train)
 	X_test = svd.transform(X_test)
 	
-	scores, best_model = model.get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	scores, best_model = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
 	return (scores, best_model[0], best_model[1], tf_idf, svd)
 
 ## pipeline for lstm model for processing user and text features.
@@ -70,7 +78,7 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, weight=No
 	
 	user_feat_len = (X_train_user.shape[1])
 	print("creating lstm model")
-	model = lstm.create_model(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
+	model = lstm.create_model_comb(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
 	
 	print("training the model with balance dataset")
 	history = model.fit([X_train, X_train_user], Y_train, validation_split=0.25, nb_epoch=epoch,
@@ -79,7 +87,7 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, weight=No
 	##plotting trainin validation - no point as we dont want ot look at accuarcy
 	lstm.training_plot(history)
 	
-	scores = lstm.get_cross_val_score(train_data, Y_train,dimension=dimension, n_splits=5, nb_epoch=epoch)
+	# scores = lstm.get_cross_val_score(train_data, Y_train,dimension=dimension, n_splits=5, nb_epoch=epoch)
 	
 	print("generating classfication report")
 	loss, accuracy = model.evaluate([X_test, X_test_user], Y_test, verbose=2)
@@ -94,11 +102,4 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, weight=No
 	print("job finished")
 	return (scores, y_pred, model, keras_tkzr, max_len)
 
-## run the pipeline for user features
-def run_user_features(train_data, test_data, Y_train, Y_test):
-	X_train, _ = preprocessing.prepare_user_features(train_data)
-	X_test, _ = preprocessing.prepare_user_features(test_data)
-	
-	scores, best_model = model.get_baseline_scores(X_train, X_test, Y_train, Y_test)
-	return (scores, best_model[0], best_model[1])
 
