@@ -221,12 +221,15 @@ if __name__ == '__main__':
 				retweet_count = cascade.head(1)['retweetCount'].values[0]
 				users = set(list(cascade['userID']))  # to remove duplicate entries
 				users = list(users)
+				print("total users", len(users))
 				if (source_node in users):
 					users.remove(source_node)
 				if (isinstance(users, (int, np.integer))):
 					user_list = list([users])
 					if (set([users]) == set([source_node])):
 						continue  # if both the source and users are same then don't create cascade
+					else:
+						print("source and user are same")
 				if (source_node and users):
 					G = cas.get_cascade(cascade, source_node, users, level_termiante=None)
 					if (G):  # don't dump blank graphs
