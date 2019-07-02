@@ -11,7 +11,7 @@ import util
 from authentication import Authenticate
 from tqdm import tqdm
 
-logging.basicConfig(level=logging.INFO, format=util.format, filename=os.path.join(util.logdir, "cascade.log"))
+logging.basicConfig(level=logging.INFO, format=util.format, filename=os.path.join(util.logdir, "cascade_weed.log"))
 
 
 class Cascade():
@@ -35,7 +35,7 @@ class Cascade():
 		logging.info(str("finding connection for " + str(typef) + " network might take some time"))
 		if (util.is_number(user_list)):
 			user_list = list([user_list])
-		for user in tqdm(user_list):
+		for user in (user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
 			api = apis[0]
@@ -60,6 +60,7 @@ class Cascade():
 	# @param: user_list= list of users ,df: (dataframe) containing user information
 	# @ return a G with node attributes (# friends, # followers, # level)
 	def get_node_attributes(self, G, user_list, df, level, source_node=None):
+		print("getting node attributes for users",)
 		attr = dict()
 		if (util.is_number(user_list)):
 			user_list = list([user_list])
@@ -91,7 +92,7 @@ class Cascade():
 		first_nodes = list()
 		if (util.is_number(user_list)):
 			user_list = list([user_list])
-		for user in tqdm(user_list):
+		for user in (user_list):
 			apis = deque(self.api_list)
 			apis.rotate(-1)
 			api = apis[0]
@@ -118,7 +119,7 @@ class Cascade():
 			# find the follower relationship
 			df_followers = self.find_connections(source_id, 'followers')  ##  just looking at foolowers type connection
 			if (not df_followers.empty):
-				for node in tqdm(source_id):  # node : source_id list
+				for node in (source_id):  # node : source_id list
 					for user in user_list:  # user : user_list
 						if ('followers_list' in df_followers):
 							if (node in list(df_followers.userID)):
@@ -135,8 +136,10 @@ class Cascade():
 			return (G, source_id, user_list)
 	
 	def get_cascade(self, df, source_node, user_list, level_termiante=None):
+		print("creating cascade for ",source_node)
 		if (util.is_number(user_list)):
 			user_list = list([user_list])
+		print("creating first level cascade ",source_node)
 		G, first_users = self.create_cascade_lvl_1(source_node, user_list)
 		# rest levels
 		if source_node in first_users:
@@ -150,8 +153,8 @@ class Cascade():
 				while True:
 					G, users_next, rem_users = self.create_cascade(G, users_next, rem_users)
 					G = self.get_node_attributes(G, users_next, df, level)
+					print("creating cascde for next level ", level)
 					print("at level", level)
-					logging.info(str("at level " + str(level)))
 					level += 1
 					if (not rem_users) or (not users_next):  # no more remaining users
 						return G
@@ -215,13 +218,14 @@ if __name__ == '__main__':
 		print("existing users",len(existing_users))
 		hexagon_data = pd.read_csv(data_path, lineterminator="\n")
 		df_tweets = cas.get_unique_tweets(hexagon_data)
-		for i in range(len(df_tweets)):
+		for i in tqdm(range(len(df_tweets))):
 			cascade = hexagon_data.loc[hexagon_data.tweetText == df_tweets.tweet_text[i]]
 			cascade['tweetCreatedAt'] = pd.to_datetime(cascade['tweetCreatedAt'])
 			cascade.sort_values(by='tweetCreatedAt', ascending=True, inplace=True)
 			source_node = cascade.head(1)['userID'].values[0]
 			if (source_node not in set(existing_users)):  #if (source_node):
 				logging.info(str("creating cascade for user " + str(source_node)))
+				print(str("creating cascade for user " + str(source_node)))
 				retweet_count = cascade.head(1)['retweetCount'].values[0]
 				users = set(list(cascade['userID']))  # to remove duplicate entries
 				users = list(users)
@@ -237,7 +241,9 @@ if __name__ == '__main__':
 						if (G.nodes != 0):
 							filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
 							nx.write_gpickle(G, os.path.join(model_path, str(output_filename), filename))
+							print(str("cascade cretaed for user " + str(source_node)))
 					else:
 						logging.info(str("userID: " + str(source_node) + " no cascade returned"))
+						print("no cascade returned for ",source_node)
 			else:
 				logging.info(str("userID: " + str(source_node) + " already exists"))
