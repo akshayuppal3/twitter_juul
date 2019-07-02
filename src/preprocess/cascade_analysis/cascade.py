@@ -234,8 +234,12 @@ if __name__ == '__main__':
 							filename = str('G_' + str(source_node) + '_' + str(retweet_count) + '.gpickle')
 							nx.write_gpickle(G, os.path.join(model_path, str(output_filename), filename))
 							print(str("cascade cretaed for user " + str(source_node)))
+						else:
+							print("graph has no nodes")
 					else:
 						logging.info(str("userID: " + str(source_node) + " no cascade returned"))
 						print("no cascade returned for ",source_node)
+				else:
+					print("not creating cascade, either source node and users are same")
 			else:
 				logging.info(str("userID: " + str(source_node) + " already exists"))
