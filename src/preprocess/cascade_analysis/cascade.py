@@ -183,8 +183,10 @@ class Cascade():
 	def get_unique_tweets(self, df) -> pd.DataFrame():
 		print("grouping by unique text started")
 		df = df.loc[df["retweetCount"] > 0]    # taking only ones with rt count > 0
-		df_tweets = df.groupby(by="tweetText")["tweetText"].agg({'tweet_text':lambda x: x.sum()}).reset_index()
-		return df_tweets
+		## group by tweet -> unique tweets
+		df = df.groupby(by="tweetText")["tweetText"].first().rename("tweet_text").reset_index()
+		df = df[["tweet_text"]]
+		return df
 
 
 if __name__ == '__main__':
