@@ -71,7 +71,7 @@ class Cascade():
 				a = df.loc[df.userID == source_node].head(1)
 				attr_source = {source_node: {'level': 0,
 				                             'friends': list(a['friendsCount'])[0],
-				                             'followers': list(a['friendsCount'])[0]}}
+				                             'followers': list(a['followersCount'])[0]}}
 				nx.set_node_attributes(G, attr_source)
 			for user in user_list:
 				if user in list(df.userID):
