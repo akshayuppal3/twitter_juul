@@ -1,8 +1,7 @@
 #  helper functions
-
 import os
 import re
-
+from tqdm import tqdm
 import git
 import matplotlib.pyplot as plt
 import nltk

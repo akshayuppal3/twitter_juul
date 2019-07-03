@@ -87,7 +87,7 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, weight=No
 	##plotting trainin validation - no point as we dont want ot look at accuarcy
 	lstm.training_plot(history)
 	
-	# scores = lstm.get_cross_val_score(train_data, Y_train,dimension=dimension, n_splits=5, nb_epoch=epoch)
+	scores = lstm.get_cross_val_score(train_data, Y_train,dimension=dimension, n_splits=5, nb_epoch=epoch)
 	
 	print("generating classfication report")
 	loss, accuracy = model.evaluate([X_test, X_test_user], Y_test, verbose=2)
