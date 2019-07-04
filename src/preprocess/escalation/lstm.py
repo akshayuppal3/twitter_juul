@@ -14,7 +14,6 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import StratifiedKFold
 
 import preprocessing
-import util
 
 
 ## plotting train and test plot
@@ -54,8 +53,8 @@ def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
 ## return lstm mdoel with input = [words_in,user_in]
 def create_model(max_len, vocalb_size, dimension, embedding_matrix):
 	## handle text features..
-	words_in = Input(shape=(max_len,))
-	emb_word = Embedding(vocalb_size, dimension, weights=[embedding_matrix], input_length=max_len)(words_in)
+	input = Input(shape=(max_len,))
+	emb_word = Embedding(vocalb_size, dimension, weights=[embedding_matrix], input_length=max_len)(input)
 	lstm_word = Bidirectional(LSTM(100, return_sequences=False, dropout=0.50, kernel_regularizer=regularizers.l2(0.01)),
 	                          merge_mode='concat')(emb_word)
 	
@@ -131,53 +130,39 @@ class Metrics(Callback):
 		return
 
 
+def get_encoded_data(data, keras_tkzr, max_len):
+	## encoding the docs
+	encoded_docs = keras_tkzr.texts_to_sequences(data)
+	X = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
+	return X
+
+
+def fit_tokenizer(data):
+	print("preparing the tokenizer")
+	keras_tkzr = keras_Tokenizer()
+	keras_tkzr.fit_on_texts(data)
+	return keras_tkzr
+
+
 ## return cross_val mean score for each class
-def get_cross_val_score(train_data, Y_train, dimension, n_splits, nb_epoch):
+def get_cross_val_score(model, X, Y, n_splits, epoch=5):
+	skf = StratifiedKFold(n_splits=n_splits, shuffle=False)
 	scores = []
-	train_ids = list(train_data.index)
-	kFold = StratifiedKFold(n_splits=n_splits)
-	for train, test in kFold.split(train_ids, Y_train):
-		
-		max_len = util.get_max_length(train_data.loc[train])
-		if max_len > 60:
-			max_len = 60
-		print("max_length", max_len)
-		
-		## prepare the tokenizer
-		print("preparing the tokenizer")
-		keras_tkzr = keras_Tokenizer()
-		keras_tkzr.fit_on_texts(train_data.loc[train]["tweetText"])
-		vocab_size = len(keras_tkzr.word_index) + 1
-		print("vocalb", vocab_size)
-		
-		## embedding matrix
-		print("creating glove embeddign matrix")
-		embedding_matrix = util.get_embedding_matrix(vocab_size, dimension, util.embedding_file,
-		                                             keras_tkzr)  ## tokenizer contains the vocalb info
-		
-		X_train_user, _ = preprocessing.prepare_user_features(train_data.loc[train])
-		X_test_user, _ = preprocessing.prepare_user_features(train_data.loc[test])
-		
-		encoded_docs = keras_tkzr.texts_to_sequences(train_data.loc[train]["tweetText"])
-		X_train = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
-		encoded_docs = keras_tkzr.texts_to_sequences(train_data.loc[test]["tweetText"])
-		X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
-		
-		user_feat_len = (X_train_user.shape[1])
-		print("creating lstm model")
-		model = create_model_comb(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
-		
-		history = model.fit([X_train, X_train_user], Y_train[train], validation_split=0.25, nb_epoch=nb_epoch,
+	for fold, (train, test) in enumerate(skf.split(X, Y)):
+		history = model.fit(X[train], Y[train], validation_split=0.25, nb_epoch=epoch,
 		                    verbose=1, batch_size=32, class_weight=None, )
 		training_plot(history)
 		
 		## prediction
-		temp = model.predict([X_test, X_test_user])
+		temp = model.predict(X[test])
 		y_pred = [np.argmax(value) for value in temp]  ## sigmoid
-		f1 = precision_recall_fscore_support(Y_train[test], y_pred, average=None)[2]
-		print(f1)
-		print('  Classification Report:\n', classification_report(Y_train[test], y_pred), '\n')
+		f1 = precision_recall_fscore_support(Y[test], y_pred, average=None)[2]
+		print("fold =", fold)
+		print('  Classification Report:\n', classification_report(Y[test], y_pred), '\n')
 		scores.append(f1)
 	score1 = np.mean([ele[0] for ele in scores])
 	score2 = np.mean([ele[1] for ele in scores])
+	
+	print("*************")
+	print(score1, score2)
 	return (score1, score2)

@@ -16,7 +16,7 @@ nltk.download('wordnet')
 nltk.download('stopwords')
 stopwords = set(stopwords.words('english'))
 tweet_tknzr = TweetTokenizer()
-
+import six
 
 ## Read the labelled files and the poly_user
 def get_git_root(path):
@@ -49,18 +49,20 @@ def get_lemma(word):
 	else:
 		return lemma
 
-
+## returns the average max length of all strings
 def get_max_length(df):
-	## max_length
-	lengths = df["tweetText"].progress_apply(get_length)
+	lengths = df.progress_apply(get_length)
 	max_len = int(lengths.quantile(0.95))
 	return (max_len)
 
 
 def get_length(s):
-	a = list(s.split())
-	return (len(a))
-
+	if isinstance(s, six.string_types):
+		a = list(s.split())
+		return (len(a))
+	else:
+		return 0
+	
 
 ## get window size
 def get_window_size(df):
