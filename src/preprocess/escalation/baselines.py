@@ -3,12 +3,11 @@
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_recall_fscore_support
-from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
-import util
 
 import preprocessing
+import util
 
 
 ## @ return a trained svm model
@@ -35,18 +34,22 @@ def cal_user_pred(test_data, model):
 ## return trained models and their scores, for ensemble
 def get_baseline_scores(X_train, X_test, Y_train, Y_test):
 	print("training the models")
+	Y = np.array(list(Y_train) + list(Y_test))  ## for corss val
+	X = np.concatenate((X_train, X_test),axis=0)  ## for cross_val
+	print("X_train shape",X_train.shape)
+	print("X_test shape",X_test.shape)
 	print("svm")
 	svm = LinearSVC(C=1, verbose=1)
 	svm.fit(X_train, Y_train)
 	svm_pred = svm.predict(X_test)
-	svm_f1 = util.get_cross_val(svm,X_test,Y_test,n_splits=5)
+	svm_f1 = util.get_cross_val(svm, X, Y, n_splits=5)
 	print('svm cross val score mean', svm_f1, '\n')
 	print("random_forest")
 	rf = RandomForestClassifier(n_estimators=100, max_depth=2,
 	                            random_state=0)
 	rf.fit(X_train, Y_train)
 	rf_pred = rf.predict(X_test)
-	rf_f1 = util.get_cross_val(rf,X_test,Y_test,n_splits=5)
+	rf_f1 = util.get_cross_val(rf, X, Y, n_splits=5)
 	
 	print('rf cross val score mean', rf_f1, '\n')
 	
@@ -54,11 +57,12 @@ def get_baseline_scores(X_train, X_test, Y_train, Y_test):
 	xgb = XGBClassifier()
 	xgb.fit(X_train, Y_train)
 	xgb_pred = xgb.predict(X_test)
-	xgb_f1 = util.get_cross_val(xgb, X_test, Y_test, n_splits=5)
+	xgb_f1 = util.get_cross_val(xgb, X, Y, n_splits=5)
 	print('xgb corss val score mean', xgb_f1, '\n')
 	
 	models = {0: "svm", 1: "rf", 2: "xgb"}
-	best_model_idx = np.argmax([svm_f1.mean(), rf_f1.mean(), xgb_f1.mean()])  ## get the best performing model based on f1
+	best_model_idx = np.argmax(
+		[svm_f1.mean(), rf_f1.mean(), xgb_f1.mean()])  ## get the best performing model based on f1
 	
 	print("the best model", models[best_model_idx])
 	

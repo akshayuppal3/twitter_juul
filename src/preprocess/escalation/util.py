@@ -1,21 +1,25 @@
 #  helper functions
 import os
 import re
-from tqdm import tqdm
+
 import git
 import matplotlib.pyplot as plt
 import nltk
 import numpy as np
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import TweetTokenizer
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import StratifiedKFold
+from tqdm import tqdm
 
 nltk.download('wordnet')
 nltk.download('stopwords')
 stopwords = set(stopwords.words('english'))
 tweet_tknzr = TweetTokenizer()
+import six
 
 
 ## Read the labelled files and the poly_user
@@ -42,6 +46,11 @@ def get_tokens(sentence):
 	return (tokens)
 
 
+def get_postives(y):
+	positives = len([ele for ele in y if ele == 1])
+	return positives
+
+
 def get_lemma(word):
 	lemma = wn.morphy(word)
 	if lemma is None:
@@ -50,16 +59,19 @@ def get_lemma(word):
 		return lemma
 
 
+## returns the average max length of all strings
 def get_max_length(df):
-	## max_length
-	lengths = df["tweetText"].progress_apply(get_length)
+	lengths = df.progress_apply(get_length)
 	max_len = int(lengths.quantile(0.95))
 	return (max_len)
 
 
 def get_length(s):
-	a = list(s.split())
-	return (len(a))
+	if isinstance(s, six.string_types):
+		a = list(s.split())
+		return (len(a))
+	else:
+		return 0
 
 
 ## get window size
@@ -151,3 +163,27 @@ def get_cross_val(model, X, Y, n_splits):
 	score1 = np.mean([ele[0] for ele in scores])
 	score2 = np.mean([ele[1] for ele in scores])
 	return np.array([score1, score2])
+
+
+def get_oversample(X, Y):
+	rus = RandomOverSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
+	rus.fit(X, Y)
+	X, Y = rus.fit_sample(X, Y)
+	print("total train data length ", len(Y))
+	print("total positives after over sampling", get_postives(Y))
+	return X, Y
+
+
+def get_undersample(X, Y):
+	rus = RandomUnderSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
+	rus.fit(X, Y)
+	X, Y = rus.fit_sample(X, Y)
+	print("total train data length ", len(Y))
+	print("total positives after under sampling", get_postives(Y))
+
+
+## join al the of the tweets for each user
+def get_tweets_user(df):
+	tqdm.pandas()
+	df = df.groupby(['userID'])['tweetText'].progress_apply(lambda x: ','.join(x)).reset_index()
+	return (df)

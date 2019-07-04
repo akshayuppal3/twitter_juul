@@ -21,7 +21,6 @@ def prepare_data(input_data, users_labelled):
 	                                                 'listedCount': 'first',
 	                                                 }).reset_index()
 	user_data = user_data.rename(columns={'tweetText': 'tweetCount'})
-	
 	# preapring text
 	tweet_data = input_data.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
 	## cleaning the text
@@ -29,27 +28,16 @@ def prepare_data(input_data, users_labelled):
 	tweet_data["tweetText"] = tweet_data["tweetText"].progress_apply(util.get_tokens).str.join(" ")
 	
 	## merging the text and user data
-	final_data = user_data.join(tweet_data.set_index("userID"), on="userID", how="inner").reset_index()
+	final_data = user_data.join(tweet_data.set_index("userID"), on="userID", how="inner").reset_index(drop=True)
 	final_data = final_data.fillna(0)
 	
 	## extract the labels
 	y = list(final_data.join(users_labelled.set_index("userID"), on="userID", how="inner")["label"])
-	# print("oversampling")
-	
-	## downsampling based on userIDS
-	userIDs = np.array(list(final_data.userID)).reshape(-1, 1)
-	rus = RandomUnderSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
-	rus.fit(userIDs, y)
-	userIDs, y_sam = rus.fit_sample(userIDs, y)
-	# print("userIDS len", len(userIDs.flatten()))
-	# print(userIDs.flatten())
-	input_data = (final_data.loc[final_data.userID.isin(userIDs.flatten())])
-	print("undersampled data length", len(input_data))
 	
 	print("train-test split")
-	train_data, test_data, Y_train, Y_test = train_test_split(input_data, y_sam, test_size=0.20, random_state=4,
+	train_data, test_data, Y_train, Y_test = train_test_split(final_data, y, test_size=0.20, random_state=4,
 	                                                          shuffle=True,
-	                                                          stratify=y_sam)
+	                                                          stratify=y)
 	return (train_data, test_data, Y_train, Y_test)
 
 
@@ -119,3 +107,5 @@ def get_month_data(data_2018, first, end):
 	print("length of the data", len(bucket_))
 	print("total users", len(bucket_.userID.unique()))
 	return bucket_
+
+
