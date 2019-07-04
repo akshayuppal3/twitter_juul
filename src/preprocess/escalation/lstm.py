@@ -166,3 +166,4 @@ def get_cross_val_score(model, X, Y, n_splits, epoch=5):
 	print("*************")
 	print(score1, score2)
 	return (score1, score2)
+
