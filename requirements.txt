@@ -16,3 +16,4 @@ networkx
 pyLDAvis
 empath
 shap
+xgboost
