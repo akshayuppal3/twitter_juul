@@ -5,6 +5,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics import classification_report
 from keras.preprocessing.text import Tokenizer as keras_Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.metrics import precision_recall_fscore_support
 import util
 import preprocessing
 import lstm
@@ -52,7 +53,8 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over"):
 
 ## pipeline for lstm model for processing user and text features.
 ## @return cross val scores, model, tokenizer and max_len
-def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, cross_splits=5,option="over",weight=None):
+def run_lstm(train_data, test_data, Y_train, Y_test,
+             dimension, epoch, cross_splits=5,option="over",cross_val= False,weight=None):
 	scores = []
 	## print winodow , max_len for analysis purpose
 	max_len = util.get_max_length(train_data)
@@ -88,10 +90,6 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, cross_spl
 	print("creating lstm model")
 	model = lstm.create_model(max_len, vocab_size, dimension, embedding_matrix)
 	
-	print("first getting cross val scores")
-	X = np.concatenate((X_train, X_test),axis=0)  ## for cross_val
-	Y = np.array(list(Y_train) + list(Y_test))
-	cross_scores = lstm.get_cross_val_score(model,X,Y,n_splits=cross_splits,epoch=epoch)
 	
 	print("training the model with balance dataset")
 	history = model.fit(X_train, Y_train, validation_split=0.25, nb_epoch=epoch,
@@ -110,7 +108,14 @@ def run_lstm(train_data, test_data, Y_train, Y_test, dimension, epoch, cross_spl
 	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
 	print('  Classification Report of train data:\n', classification_report(Y_test, y_pred), '\n')
 	
-	print("lstm cross val score ", np.array(cross_scores).mean())
+	if cross_val == True:
+		print("first getting cross val scores")
+		X = np.concatenate((X_train, X_test),axis=0)  ## for cross_val
+		Y = np.array(list(Y_train) + list(Y_test))
+		cross_scores = lstm.get_cross_val_score(model,X,Y,n_splits=cross_splits,epoch=epoch)
+		print("lstm cross val scores ", (cross_scores))
+	else:
+		cross_scores = precision_recall_fscore_support(Y_test, y_pred, average=None)[2]
 	
 	print("job finished")
 	return (cross_scores, y_pred, model, keras_tkzr, max_len)
