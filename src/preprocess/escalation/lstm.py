@@ -47,6 +47,8 @@ def cal_lstm_pred(test_data, model, keras_tkzr, max_len):
 	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
 	return y_pred
 
+# calculated combined lstm predictions
+# !! deprecated
 def cal_comb_lstm_pred(test_data,model,keras_tkzr, max_len):
 	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
 	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
