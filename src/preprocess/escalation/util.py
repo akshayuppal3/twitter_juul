@@ -180,7 +180,7 @@ def get_undersample(X, Y):
 	X, Y = rus.fit_sample(X, Y)
 	print("total train data length ", len(Y))
 	print("total positives after under sampling", get_postives(Y))
-
+	return X, Y
 
 ## join al the of the tweets for each user
 def get_tweets_user(df):
