@@ -38,13 +38,21 @@ def training_plot(history):
 
 
 ## calculated the lstm prediction
-def cal_lstm_pred(test_data, Y_test, model, keras_tkzr, max_len):
+def cal_lstm_pred(test_data, model, keras_tkzr, max_len):
 	## encoding the test data
+	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
+	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
+	## calculate the model predictions
+	temp = model.predict(X_test)
+	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
+	return y_pred
+
+def cal_comb_lstm_pred(test_data,model,keras_tkzr, max_len):
 	encoded_docs = keras_tkzr.texts_to_sequences(test_data["tweetText"])
 	X_test = (pad_sequences(encoded_docs, maxlen=max_len, padding='post'))
 	X_test_user, _ = preprocessing.prepare_user_features(test_data)
 	## calculate the model predictions
-	temp = model.predict([X_test, X_test_user])
+	temp = model.predict([X_test,X_test_user])
 	y_pred = [np.argmax(value) for value in temp]  ## sigmoid
 	return y_pred
 
