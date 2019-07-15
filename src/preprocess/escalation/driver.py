@@ -17,13 +17,13 @@ import baselines
 def run_user_features(train_data, test_data, Y_train, Y_test,option="over"):
 	X_train, _ = preprocessing.prepare_user_features(train_data)
 	X_test, _ = preprocessing.prepare_user_features(test_data)
-	print("train data length", len(Y_train))
-	print("total positives before in train", util.get_postives(Y_train))
+	print("before sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
 	if (option == "over"):
 		X_train, Y_train = util.get_oversample(X_train, Y_train)
+		print("after sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
 	elif (option == "under"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
-	
+		print("after sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
 	all_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
 	return (all_models)
 
@@ -35,8 +35,6 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over"):
 	## transform train and test data
 	X_test = tf_idf.transform(test_data)
 	X_train = tf_idf.transform(train_data)
-	print("train data length", len(Y_train))
-	print("total positives before in train", util.get_postives(Y_train))
 	if (option =="over"):
 		X_train, Y_train = util.get_oversample(X_train,Y_train)
 	elif(option == "under"):
@@ -97,8 +95,6 @@ def run_lstm(train_data, test_data, Y_train, Y_test,
 	
 	##plotting trainin validation - no point as we dont want ot look at accuarcy
 	lstm.training_plot(history)
-	
-	# scores = lstm.get_cross_val_score(train_data, Y_train,dimension=dimension, n_splits=5, nb_epoch=epoch)
 	
 	print("generating classfication report")
 	loss, accuracy = model.evaluate(X_test, Y_test, verbose=2)
