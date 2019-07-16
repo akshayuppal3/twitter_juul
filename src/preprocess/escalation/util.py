@@ -176,8 +176,6 @@ def get_undersample(X, Y):
 	rus = RandomUnderSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
 	rus.fit(X, Y)
 	X, Y = rus.fit_sample(X, Y)
-	print("total train data length ", len(Y))
-	print("total positives after under sampling", get_postives(Y))
 	return X, Y
 
 ## join al the of the tweets for each user
