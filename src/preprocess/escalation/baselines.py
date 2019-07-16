@@ -67,11 +67,11 @@ def get_baseline_scores(X_train, X_test, Y_train, Y_test,cross_val=False):
 		print('rf cross val score mean', rf_f1, '\n')
 		print('xgb corss val score mean', xgb_f1, '\n')
 		
-		models = {0: "svm", 1: "rf", 2: "xgb"}
-		best_model_idx = np.argmax(
-			[svm_f1.mean(), rf_f1.mean(), xgb_f1.mean()])  ## get the best performing model based on f1
-	
-		print("the best model", models[best_model_idx])
+	models = {0: "svm", 1: "rf", 2: "xgb"}
+	best_model_idx = np.argmax(
+		[svm_f1.mean(), rf_f1.mean(), xgb_f1.mean()])  ## get the best performing model based on f1
+
+	print("the best model", models[best_model_idx])
 
 		
 	
