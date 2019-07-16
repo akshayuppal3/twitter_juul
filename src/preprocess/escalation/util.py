@@ -169,8 +169,6 @@ def get_oversample(X, Y):
 	rus = RandomOverSampler(random_state=0)  # rus = RandomOverSampler(random_state=0)
 	rus.fit(X, Y)
 	X, Y = rus.fit_sample(X, Y)
-	print("total train data length ", len(Y))
-	print("total positives after over sampling", get_postives(Y))
 	return X, Y
 
 
