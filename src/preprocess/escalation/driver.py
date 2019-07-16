@@ -28,7 +28,7 @@ def run_user_features(train_data, test_data, Y_train, Y_test,option="over"):
 	return (all_models)
 
 ## @ return a trained svm model on text features for LR
-def run_text_features(train_data, test_data, Y_train, Y_test,option="over"):
+def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=False):
 	tf_idf = TfidfVectorizer(sublinear_tf=True)
 	tf_idf.fit(train_data)  ## fit on train data
 	
@@ -41,10 +41,11 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
 	
 	## reduce the dimesionality
-	svd = TruncatedSVD(n_components=100, n_iter=7, random_state=42)
-	svd.fit(X_train)
-	X_train = svd.transform(X_train)
-	X_test = svd.transform(X_test)
+	if svd == True:
+		svd = TruncatedSVD(n_components=100, n_iter=7, random_state=42)
+		svd.fit(X_train)
+		X_train = svd.transform(X_train)
+		X_test = svd.transform(X_test)
 	
 	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
 	return (baseline_models, tf_idf, svd)
