@@ -28,7 +28,7 @@ def run_user_features(train_data, test_data, Y_train, Y_test,option="over"):
 	return (all_models)
 
 ## @ return a trained svm model on text features for LR
-def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=False):
+def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=False,cross_val=False):
 	tf_idf = TfidfVectorizer(sublinear_tf=True)
 	tf_idf.fit(train_data)  ## fit on train data
 	
@@ -47,7 +47,11 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=F
 		X_train = svd.transform(X_train)
 		X_test = svd.transform(X_test)
 	
-	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
+	else:
+		X_train = X_train.toarray()  ## because of sparse array
+		X_test = X_test.toarray()    ## because of sparse array
+	
+	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test,cross_val=cross_val)
 	return (baseline_models, tf_idf, svd)
 
 ## pipeline for lstm model for processing user and text features.
