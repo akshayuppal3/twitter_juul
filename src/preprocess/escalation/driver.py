@@ -37,9 +37,10 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=F
 	X_train = tf_idf.transform(train_data)
 	if (option =="over"):
 		X_train, Y_train = util.get_oversample(X_train,Y_train)
+		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	elif(option == "under"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
-	
+		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	## reduce the dimesionality
 	if svd == True:
 		svd = TruncatedSVD(n_components=100, n_iter=7, random_state=42)
