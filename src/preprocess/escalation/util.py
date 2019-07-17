@@ -150,7 +150,17 @@ def plot_coeff(k, model, feature_names):
 	feature_names = np.array(feature_names)
 	plt.xticks(np.arange(1, 1 + 2 * k), feature_names[top_coefficients], rotation=60, ha='right', fontsize=20)
 	plt.show()
-	return coef
+
+# plotting top coefficients
+# @return None
+def plot_model_coeff(model, k, feature_names):
+	coef = model.feature_importances_
+	top_coefficients = np.argsort(coef)[-k:]
+	plt.figure(figsize=(17, 8))
+	plt.bar(np.arange(k), coef[top_coefficients], color="blue")
+	feature_names = np.array(feature_names)
+	plt.xticks(np.arange(k), feature_names[top_coefficients], rotation=60, ha='right', fontsize=20)
+	plt.show()
 
 
 def get_cross_val(model, X, Y, n_splits):
@@ -177,6 +187,7 @@ def get_undersample(X, Y):
 	rus.fit(X, Y)
 	X, Y = rus.fit_sample(X, Y)
 	return X, Y
+
 
 ## join al the of the tweets for each user
 def get_tweets_user(df):
