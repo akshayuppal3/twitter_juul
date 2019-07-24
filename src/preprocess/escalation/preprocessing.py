@@ -15,11 +15,10 @@ def prepare_data(input_data, users_labelled):
 	user_data = input_data.groupby(by="userID").agg({'tweetText': 'count',
 	                                                 'followersCount': 'first',
 	                                                 'friendsCount': 'first',
-	                                                 'statusesCount': 'first',
 	                                                 'favourites_count': 'first',
 	                                                 'listedCount': 'first',
 	                                                 }).reset_index()
-	user_data = user_data.rename(columns={'tweetText': 'tweetCount'})
+	user_data = user_data.rename(columns={'tweetText': 'statusesCount'})
 	# preapring text
 	tweet_data = input_data.groupby(by="userID")["tweetText"].apply(lambda x: "%s" % ' '.join(x)).reset_index()
 	## cleaning the text
@@ -43,7 +42,7 @@ def prepare_data(input_data, users_labelled):
 ## extracts user features from data
 def prepare_user_features(input_):
 	user_data = input_[["followersCount", "friendsCount", "statusesCount"
-		, "favourites_count", "listedCount", "tweetCount", ]]
+		, "favourites_count", "listedCount"]]
 	## followerss/ friends ration
 	user_data["ff_ratio"] = user_data["followersCount"] / user_data["friendsCount"]
 	
@@ -54,7 +53,7 @@ def prepare_user_features(input_):
 		user_data[["followersCount", "friendsCount", "statusesCount", "favourites_count",
 		           "listedCount"]])
 	
-	user_data["unigrams"] = list(input_["tweetText"].apply(util.get_length))
+	user_data["unigrams"] = np.log(list(input_["tweetText"].apply(util.get_unique_length)))
 	
 	## replace the na and inf values
 	user_data = user_data.replace([np.inf, -np.inf], np.nan)
