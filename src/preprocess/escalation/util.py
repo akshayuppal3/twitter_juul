@@ -15,6 +15,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 
+tqdm.pandas()
 nltk.download('wordnet')
 nltk.download('stopwords')
 stopwords = set(stopwords.words('english'))
@@ -61,6 +62,7 @@ def get_lemma(word):
 
 ## returns the average max length of all strings
 def get_max_length(df):
+	tqdm.pandas()
 	lengths = df.progress_apply(get_length)
 	max_len = int(lengths.quantile(0.95))
 	return (max_len)
@@ -151,6 +153,7 @@ def plot_coeff(k, model, feature_names):
 	plt.xticks(np.arange(1, 1 + 2 * k), feature_names[top_coefficients], rotation=60, ha='right', fontsize=20)
 	plt.show()
 
+
 # plotting top coefficients
 # @return None
 def plot_model_coeff(model, k, feature_names):
@@ -170,8 +173,8 @@ def get_cross_val(model, X, Y, n_splits):
 		model.fit(X[train], Y[train])
 		y_pred = model.predict(X[test])
 		scores.append(precision_recall_fscore_support(Y[test], y_pred, average=None)[2])
-	score1 = np.mean([ele[0] for ele in scores])
-	score2 = np.mean([ele[1] for ele in scores])
+	score1 = np.mean([ele[0] for ele in scores])  ## average of 5 folds
+	score2 = np.mean([ele[1] for ele in scores])  ## average of 5 folds
 	return np.array([score1, score2])
 
 
@@ -194,3 +197,12 @@ def get_tweets_user(df):
 	tqdm.pandas()
 	df = df.groupby(['userID'])['tweetText'].progress_apply(lambda x: ','.join(x)).reset_index()
 	return (df)
+
+
+def get_cross_val_pred(model, X, Y, n_splits):
+	kFold = StratifiedKFold(n_splits=n_splits)
+	y_preds = []
+	for train, test in kFold.split(X, Y):
+		model.fit(X[train], Y[train])
+		y_preds.append(model.predict(X[test]))
+	return y_preds

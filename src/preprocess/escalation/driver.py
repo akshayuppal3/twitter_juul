@@ -1,44 +1,46 @@
 # driver functions containing running the whole pipeline related to running user and text features
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import classification_report
-from keras.preprocessing.text import Tokenizer as keras_Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from sklearn.metrics import precision_recall_fscore_support
-import util
-import preprocessing
-import lstm
 import numpy as np
+from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import Tokenizer as keras_Tokenizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import classification_report
+from sklearn.metrics import precision_recall_fscore_support
+
 import baselines
+import lstm
+import preprocessing
+import util
 
 
 ## run the pipeline for user features
-def run_user_features(train_data, test_data, Y_train, Y_test,option="over"):
+def run_user_features(train_data, test_data, Y_train, Y_test, option="over"):
 	X_train, _ = preprocessing.prepare_user_features(train_data)
 	X_test, _ = preprocessing.prepare_user_features(test_data)
-	print("before sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
+	print("before sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	if (option == "over"):
 		X_train, Y_train = util.get_oversample(X_train, Y_train)
-		print("after sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
+		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	elif (option == "under"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
-		print("after sampling postives in train ", util.get_postives(Y_train),"total lenggth:",len(Y_train))
+		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	all_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test)
 	return (all_models)
 
+
 ## @ return a trained svm model on text features for LR
-def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=False,cross_val=False):
+def run_text_features(train_data, test_data, Y_train, Y_test, option="over", svd=False, cross_val=False):
 	tf_idf = TfidfVectorizer(sublinear_tf=True)
 	tf_idf.fit(train_data)  ## fit on train data
 	
 	## transform train and test data
 	X_test = tf_idf.transform(test_data)
 	X_train = tf_idf.transform(train_data)
-	if (option =="over"):
-		X_train, Y_train = util.get_oversample(X_train,Y_train)
+	if (option == "over"):
+		X_train, Y_train = util.get_oversample(X_train, Y_train)
 		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
-	elif(option == "under"):
+	elif (option == "under"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
 		print("after sampling postives in train ", util.get_postives(Y_train), "total lenggth:", len(Y_train))
 	## reduce the dimesionality
@@ -50,15 +52,15 @@ def run_text_features(train_data, test_data, Y_train, Y_test,option="over",svd=F
 	
 	else:
 		X_train = X_train.toarray()  ## because of sparse array
-		X_test = X_test.toarray()    ## because of sparse array
+		X_test = X_test.toarray()  ## because of sparse array
 	
-	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test,cross_val=cross_val)
+	baseline_models = baselines.get_baseline_scores(X_train, X_test, Y_train, Y_test, cross_val=cross_val)
 	return (baseline_models, tf_idf, svd)
 
 ## pipeline for lstm model for processing user and text features.
 ## @return cross val scores, model, tokenizer and max_len
 def run_lstm(train_data, test_data, Y_train, Y_test,
-             dimension, epoch, cross_splits=5,option="over",cross_val= False,weight=None):
+             dimension, epoch,option="over", cross_splits=5, cross_val=False, weight=None):
 	scores = []
 	## print winodow , max_len for analysis purpose
 	max_len = util.get_max_length(train_data)
@@ -68,13 +70,13 @@ def run_lstm(train_data, test_data, Y_train, Y_test,
 	
 	## prepare the tokenizer
 	keras_tkzr = lstm.fit_tokenizer(train_data)
-	vocab_size = len(keras_tkzr.word_index) + 1
-	print("vocalb", vocab_size)
+	vocalb_size = len(keras_tkzr.word_index) + 1
+	print("vocalb", vocalb_size)
 	
 	## embedding matrix
 	print("creating glove embeddign matrix")
-	embedding_matrix = util.get_embedding_matrix(vocab_size, dimension, util.embedding_file,
-	                                        keras_tkzr)  ## tokenizer contains the vocalb info
+	embedding_matrix = util.get_embedding_matrix(vocalb_size, dimension, util.embedding_file,
+	                                             keras_tkzr)  ## tokenizer contains the vocalb info
 	
 	## encoding the docs
 	print("encoding the data")
@@ -86,14 +88,13 @@ def run_lstm(train_data, test_data, Y_train, Y_test,
 	print("X-test", X_test.shape)
 	
 	## either of the options for under and over sampling
-	if (option =="over"):
-		X_train, Y_train = util.get_oversample(X_train,Y_train)
-	elif(option == "under"):
+	if (option == "over"):
+		X_train, Y_train = util.get_oversample(X_train, Y_train)
+	elif (option == "under"):
 		X_train, Y_train = util.get_undersample(X_train, Y_train)
 	
 	print("creating lstm model")
-	model = lstm.create_model(max_len, vocab_size, dimension, embedding_matrix)
-	
+	model = lstm.create_model(max_len, vocalb_size, dimension, embedding_matrix)
 	
 	print("training the model with balance dataset")
 	history = model.fit(X_train, Y_train, validation_split=0.25, nb_epoch=epoch,
@@ -112,9 +113,9 @@ def run_lstm(train_data, test_data, Y_train, Y_test,
 	
 	if cross_val == True:
 		print("first getting cross val scores")
-		X = np.concatenate((X_train, X_test),axis=0)  ## for cross_val
+		X = np.concatenate((X_train, X_test), axis=0)  ## for cross_val
 		Y = np.array(list(Y_train) + list(Y_test))
-		cross_scores = lstm.get_cross_val_score(model,X,Y,n_splits=cross_splits,epoch=epoch)
+		cross_scores = lstm.get_cross_val_score(model, X, Y, n_splits=cross_splits, epoch=epoch)
 		print("lstm cross val scores ", (cross_scores))
 	else:
 		cross_scores = precision_recall_fscore_support(Y_test, y_pred, average=None)[2]
@@ -122,9 +123,10 @@ def run_lstm(train_data, test_data, Y_train, Y_test,
 	print("job finished")
 	return (cross_scores, y_pred, model, keras_tkzr, max_len)
 
+
 # !! deprecated
 def run_lstm_comb(train_data, test_data, Y_train, Y_test,
-                  dimension, epoch, cross_splits=5,option="over",weight=None):
+                  dimension, epoch, cross_splits=5, option="over", weight=None):
 	scores = []
 	## print winodow , max_len for analysis purpose
 	max_len = util.get_max_length(train_data["tweetText"])
@@ -171,11 +173,11 @@ def run_lstm_comb(train_data, test_data, Y_train, Y_test,
 	model = lstm.create_model_comb(max_len, user_feat_len, vocab_size, dimension, embedding_matrix)
 	
 	print("first getting cross val scores")
-	X_text = np.concatenate((X_train, X_test),axis=0)  ## for cross_val
-	X_user = np.concatenate((X_train_user,X_test_user),axis=0)
-	X = [X_text,X_user]
+	X_text = np.concatenate((X_train, X_test), axis=0)  ## for cross_val
+	X_user = np.concatenate((X_train_user, X_test_user), axis=0)
+	X = [X_text, X_user]
 	Y = np.array(list(Y_train) + list(Y_test))
-	cross_scores = lstm.get_cross_val_score(model,X,Y,n_splits=cross_splits,epoch=epoch)
+	cross_scores = lstm.get_cross_val_score(model, X, Y, n_splits=cross_splits, epoch=epoch)
 	
 	print("training the model with balance dataset")
 	history = model.fit([X_train, X_train_user], Y_train, validation_split=0.25, nb_epoch=epoch,

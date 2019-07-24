@@ -12,7 +12,7 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import StratifiedKFold
-
+import util
 import preprocessing
 
 
@@ -35,6 +35,30 @@ def training_plot(history):
 	plt.xlabel('Epoch')
 	plt.legend(['Train', 'Test'], loc='upper left')
 	plt.show()
+
+
+## prepare the tokenizer
+# @return encoded data, max len , vocalb size and embeddign matrix
+def prepare_lstm_data(data, dimension):
+	max_len = util.get_max_length(data)
+	if max_len > 60:
+		max_len = 60
+	print("max_length", max_len)
+	keras_tkzr = fit_tokenizer(data)
+	vocalb_size = len(keras_tkzr.word_index) + 1
+	print("vocalb", vocalb_size)
+	
+	## embedding matrix
+	print("creating glove embeddign matrix")
+	embedding_matrix = util.get_embedding_matrix(vocalb_size, dimension, util.embedding_file,
+	                                             keras_tkzr)  ## tokenizer contains the vocalb info
+	## encoding the docs
+	print("encoding the data")
+	X = get_encoded_data(data, keras_tkzr, max_len)
+	
+	print("X-train", X.shape)
+	
+	return (X, keras_tkzr, max_len, vocalb_size, embedding_matrix)
 
 
 ## calculated the lstm prediction
@@ -153,6 +177,33 @@ def fit_tokenizer(data):
 	keras_tkzr.fit_on_texts(data)
 	return keras_tkzr
 
+# gives the encoded and oversampled data
+## prepare the tokenizer
+def split_data_text(data, Y, dimension,option="over"):
+	max_len = util.get_max_length(data)
+	if max_len > 60:
+		max_len = 60
+	print("max_length", max_len)
+	keras_tkzr = fit_tokenizer(data)
+	vocalb_size = len(keras_tkzr.word_index) + 1
+	print("vocalb", vocalb_size)
+	
+	## embedding matrix
+	print("creating glove embeddign matrix")
+	embedding_matrix = util.get_embedding_matrix(vocalb_size, dimension, util.embedding_file,
+	                                             keras_tkzr)  ## tokenizer contains the vocalb info
+	## encoding the docs
+	print("encoding the data")
+	X_train = get_encoded_data(data, keras_tkzr, max_len)
+	
+	print("X-train", X_train.shape)
+	
+	## either of the options for under and over sampling
+	if (option == "over"):
+		X_train, Y_train = util.get_oversample(X_train, Y)
+	
+	return (X_train, Y_train, max_len, vocalb_size, embedding_matrix)
+
 
 ## return cross_val mean score for each class
 def get_cross_val_score(model, X, Y, n_splits, epoch=5):
@@ -171,9 +222,12 @@ def get_cross_val_score(model, X, Y, n_splits, epoch=5):
 		print('  Classification Report:\n', classification_report(Y[test], y_pred), '\n')
 		scores.append(f1)
 	score1 = np.mean([ele[0] for ele in scores])
-	score2 = np.mean([ele[1] for ele in scores])
+	score2 = np.mean([ele[1] for ele in scores])     ## mean of the 5 splits
 	
 	print("*************")
 	print(score1, score2)
 	return (score1, score2)
+
+
+
 

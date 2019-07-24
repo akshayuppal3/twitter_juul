@@ -1,7 +1,6 @@
 # This function is related to pre-processing data
 import numpy as np
 import pandas as pd
-from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
@@ -70,15 +69,36 @@ def prepare_user_features(input_):
 	X = user_data.values
 	return (X, user_data)
 
-
 ## @ returns the data in that year
 def get_year_data(year, first_data, juul_data):
+	data = juul_data[juul_data.tweetCreatedAt.dt.year == year]
+	all_users = data.userID.unique()  # all users in that year
+	check_data = first_data[first_data.userID.isin(all_users)]  ## users we need to check
+	selected_data = (check_data[
+		(check_data.weed_first.dt.year > year) | (pd.isnull(check_data.weed_first))])  ## juul before
+	selected_users = selected_data["userID"]  ## total juul before
+	poly_users = selected_data["userID"][selected_data.weed_first.dt.year == (year + 1)]
+	print("total_users", len(selected_users))
+	print("users that will change", len(poly_users))
+	users_lbl = pd.DataFrame(selected_users, columns=["userID"])
+	users_lbl["label"] = 0
+	users_lbl.loc[users_lbl.userID.isin(poly_users), "label"] = 1
+	final_data = data[data.userID.isin(selected_users)]  ## filter data by juul before users
+	print("total users",len(final_data.userID.unique()))
+	print("total data",len(final_data))
+	return ((year, final_data, users_lbl))
+
+
+## ! deprecate
+## @ returns the data in that year
+def get_year_data_old(year, first_data, juul_data):
 	print("year", year)
+	# Juul before users
 	users_ = list(first_data["userID"].loc[
 		              ((first_data.juul_first.dt.year <= year) & (first_data.juul_first.dt.year > (year - 1)))
 		              & ((first_data.weed_first.dt.year == (year + 1)) | (pd.isnull(first_data.weed_first)))
 		              ## weed data after 2015
-		              ])  # users who will change after september
+		              ])  ## juul before users
 	
 	poly_turn = list(first_data["userID"].loc[
 		                 (first_data.juul_first.dt.year <= year) &
@@ -99,7 +119,6 @@ def get_year_data(year, first_data, juul_data):
 	len(users_lbl.loc[users_lbl.label == 1])  ## sanity check
 	return ((year, data_, users_lbl))
 
-
 # get month data for between the interval start and end
 def get_month_data(data_2018, first, end):
 	bucket_ = data_2018.loc[
@@ -107,5 +126,3 @@ def get_month_data(data_2018, first, end):
 	print("length of the data", len(bucket_))
 	print("total users", len(bucket_.userID.unique()))
 	return bucket_
-
-
