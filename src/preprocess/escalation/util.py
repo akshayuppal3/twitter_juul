@@ -68,9 +68,18 @@ def get_max_length(df):
 	return (max_len)
 
 
+## get unique words length
+def get_unique_length(s):
+	if isinstance(s, six.string_types):
+		a = set(list(s.split()))  ## unique words
+		return (len(a))
+	else:
+		return 0
+
+## get no of words words
 def get_length(s):
 	if isinstance(s, six.string_types):
-		a = list(s.split())
+		a = (list(s.split()))
 		return (len(a))
 	else:
 		return 0
