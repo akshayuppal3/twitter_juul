@@ -68,9 +68,10 @@ def prepare_user_features(input_):
 	X = user_data.values
 	return (X, user_data)
 
+
 ## @ returns the data in that year
 def get_year_data(year, first_data, juul_data):
-	data = juul_data[juul_data.tweetCreatedAt.dt.year == year]
+	data = juul_data[(juul_data.tweetCreatedAt.dt.year >= year - 1) & ((juul_data.tweetCreatedAt.dt.year) <= year)]
 	all_users = data.userID.unique()  # all users in that year
 	check_data = first_data[first_data.userID.isin(all_users)]  ## users we need to check
 	selected_data = (check_data[
@@ -83,8 +84,8 @@ def get_year_data(year, first_data, juul_data):
 	users_lbl["label"] = 0
 	users_lbl.loc[users_lbl.userID.isin(poly_users), "label"] = 1
 	final_data = data[data.userID.isin(selected_users)]  ## filter data by juul before users
-	print("total users",len(final_data.userID.unique()))
-	print("total data",len(final_data))
+	print("total data", len(final_data))
+	print("***********")
 	return ((year, final_data, users_lbl))
 
 
@@ -117,6 +118,7 @@ def get_year_data_old(year, first_data, juul_data):
 	users_lbl.loc[users_lbl.userID.isin(poly_turn), "label"] = 1
 	len(users_lbl.loc[users_lbl.label == 1])  ## sanity check
 	return ((year, data_, users_lbl))
+
 
 # get month data for between the interval start and end
 def get_month_data(data_2018, first, end):
