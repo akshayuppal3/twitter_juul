@@ -29,6 +29,19 @@ def cal_text_pred(test_data, model, tf_idf, svd):
 	return y_pred
 
 
+## @ param : text data
+## @ return : svd transformed data
+## vectorize the text
+def encode_text_svd(data):
+	tf_idf = TfidfVectorizer(sublinear_tf=True)
+	svd = TruncatedSVD(n_components=100, n_iter=7, random_state=42)
+	tf_idf.fit(data)  ## fit on train data
+	temp_data = tf_idf.transform(data)
+	svd.fit(temp_data)
+	final_data = (svd.transform(temp_data))
+	return (final_data, tf_idf, svd)
+
+
 def get_encoded_text_svd(test_data, tf_idf, svd):
 	X_test = tf_idf.transform(test_data)
 	X_test = svd.transform(X_test)  ## reduce the dimensionality
